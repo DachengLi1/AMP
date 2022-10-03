@@ -1,0 +1,112 @@
+mp: 1, dp: 16, pp: 1, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 1 
+1.99
+mp: 1, dp: 8, pp: 2, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 2 
+1.98
+mp: 1, dp: 4, pp: 4, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 4 
+2.07
+mp: 1, dp: 2, pp: 8, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 8 
+2.41
+mp: 2, dp: 8, pp: 1, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 2 
+1.81
+mp: 2, dp: 4, pp: 2, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 4 
+1.97
+mp: 2, dp: 2, pp: 4, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 8 
+2.12
+mp: 2, dp: 1, pp: 8, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 16 
+2.51
+mp: 4, dp: 4, pp: 1, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 4 
+2.22
+mp: 4, dp: 2, pp: 2, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 8 
+2.44
+mp: 4, dp: 1, pp: 4, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 16 
+2.76
+mp: 8, dp: 2, pp: 1, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 8 
+3.76
+mp: 8, dp: 1, pp: 2, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 16 
+4.08
+mp: 16, dp: 1, pp: 1, nlayer: 24, hidden: 1024, global_bs: 16, local_bs: 1, gas: 16 
+7.56
+
+
+mp: 1, dp: 16, pp: 1, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 2 
+mp: 1, dp: 8, pp: 2, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 4 
+2.97
+mp: 1, dp: 4, pp: 4, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 8 
+3.24
+mp: 1, dp: 2, pp: 8, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 16 
+3.96
+mp: 2, dp: 8, pp: 1, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 4 
+3.12
+mp: 2, dp: 4, pp: 2, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 8 
+3.23
+mp: 2, dp: 2, pp: 4, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 16 
+3.65
+mp: 2, dp: 1, pp: 8, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 32 
+4.54
+mp: 4, dp: 4, pp: 1, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 8 
+4.09
+mp: 4, dp: 2, pp: 2, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 16 
+4.46
+mp: 4, dp: 1, pp: 4, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 32 
+5.1
+mp: 8, dp: 2, pp: 1, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 16 
+7.3
+mp: 8, dp: 1, pp: 2, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 32 
+8.11
+mp: 16, dp: 1, pp: 1, nlayer: 24, hidden: 1024, global_bs: 32, local_bs: 1, gas: 32 
+15.05
+mp: 1, dp: 16, pp: 1, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 4 
+mp: 1, dp: 8, pp: 2, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 8 
+4.89
+mp: 1, dp: 4, pp: 4, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 16 
+5.64
+mp: 1, dp: 2, pp: 8, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 32 
+7.13
+mp: 2, dp: 8, pp: 1, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 8 
+5.39
+mp: 2, dp: 4, pp: 2, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 16 
+5.83
+mp: 2, dp: 2, pp: 4, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 32 
+6.74
+mp: 2, dp: 1, pp: 8, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 64 
+8.51
+mp: 4, dp: 4, pp: 1, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 16 
+7.82
+mp: 4, dp: 2, pp: 2, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 32 
+8.43
+mp: 4, dp: 1, pp: 4, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 64 
+9.7
+mp: 8, dp: 2, pp: 1, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 32 
+14.59
+mp: 8, dp: 1, pp: 2, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 64 
+15.34
+mp: 16, dp: 1, pp: 1, nlayer: 24, hidden: 1024, global_bs: 64, local_bs: 1, gas: 64 
+29.85
+
+mp: 1, dp: 16, pp: 1, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 8 
+mp: 1, dp: 8, pp: 2, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 16 
+8.68
+mp: 1, dp: 4, pp: 4, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 32 
+10.24
+mp: 1, dp: 2, pp: 8, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 64 
+13.43
+mp: 2, dp: 8, pp: 1, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 16 
+10.16
+mp: 2, dp: 4, pp: 2, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 32 
+11.14
+mp: 2, dp: 2, pp: 4, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 64 
+12.85
+mp: 2, dp: 1, pp: 8, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 128 
+16.57
+mp: 4, dp: 4, pp: 1, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 32 
+15.13
+mp: 4, dp: 2, pp: 2, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 64 
+16.58
+mp: 4, dp: 1, pp: 4, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 128 
+19.35
+mp: 8, dp: 2, pp: 1, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 64 
+29.01
+mp: 8, dp: 1, pp: 2, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 128 
+30.46
+mp: 16, dp: 1, pp: 1, nlayer: 24, hidden: 1024, global_bs: 128, local_bs: 1, gas: 128 
+60.49

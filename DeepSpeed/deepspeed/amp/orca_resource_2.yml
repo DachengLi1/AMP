@@ -1,0 +1,7 @@
+nodes:
+    - address: h0.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h1.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 

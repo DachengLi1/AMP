@@ -1,0 +1,49 @@
+nodes:
+    - address: h0.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h1.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h2.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h3.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h4.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h5.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h6.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h7.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h8.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h9.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h10.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h11.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h12.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h13.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h14.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+    - address: h15.ray-dev-16.BigLearning
+      gpus: [0]
+      bandwidth: 40 

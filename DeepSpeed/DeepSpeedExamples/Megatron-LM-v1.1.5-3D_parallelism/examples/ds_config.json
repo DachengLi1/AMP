@@ -1,0 +1,1 @@
+{"train_micro_batch_size_per_gpu": 32, "gradient_accumulation_steps": 1, "gradient_clipping": 1.0, "steps_per_print": 10, "wall_clock_breakdown": true, "fp16": {"enabled": true, "loss_scale": 0, "loss_scale_window": 1000, "hysteresis": 2, "min_loss_scale": 1}, "zero_allow_untested_optimizer": false, "fp32_allreduce": true}

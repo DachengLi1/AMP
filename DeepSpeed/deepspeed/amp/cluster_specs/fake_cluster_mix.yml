@@ -1,0 +1,50 @@
+nodes:
+    - address: h0.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: ray-dev8
+    - address: h1.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: ray-dev8
+    - address: h2.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: ray-dev8
+    - address: h3.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: ray-dev8
+    - address: h4.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: ray-dev8
+    - address: h5.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: ray-dev8
+    - address: h6.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: ray-dev8
+    - address: h7.ray-dev8.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: ray-dev8
+    - address: h0.amp-4.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: amp-4
+    - address: h1.amp-4.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: amp-4
+    - address: h2.amp-4.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: amp-4
+    - address: h3.amp-4.BigLearning
+      gpus: [0]
+      bandwidth: 40 
+      namespace: amp-4
+        
