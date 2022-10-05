@@ -21,7 +21,7 @@ import time
 import numpy as np
 import torch
 
-from megatron import mpu, print_rank_0
+from megatron import get_args, mpu, print_rank_0
 from megatron.data.dataset_utils import get_train_valid_test_split_
 from megatron.data.indexed_dataset import make_dataset as make_indexed_dataset
 
@@ -77,6 +77,8 @@ def get_indexed_dataset_(data_prefix, data_impl, skip_warmup):
     indexed_dataset = make_indexed_dataset(data_prefix,
                                            data_impl,
                                            skip_warmup)
+    print(data_impl)
+    assert False
     print_rank_0(' > finished creating indexed dataset in {:4f} '
                  'seconds'.format(time.time() - start_time))
     print_rank_0('    number of documents: {}'.format(
@@ -84,6 +86,21 @@ def get_indexed_dataset_(data_prefix, data_impl, skip_warmup):
 
     return indexed_dataset
 
+class FakeGPT2Dataset(object):
+    def __init__(self):
+        args = get_args()
+
+        # let's set a dummy num_elems
+        _sim_dataset_size = int(1e3)
+        self.bs = args.batch_size
+        self.data = np.random.randint(low=0, high=50256, size=(_sim_dataset_size, args.seq_length+1))
+
+    def __len__(self):
+        return self.data.shape[0]
+
+    def __getitem__(self, idx):
+        #print(self.data[:self.bs, :], self.data[:self.bs, :].shape)
+        return {'text': np.array(self.data[:self.bs, :].flatten(), dtype=np.int64)}
 
 class GPT2Dataset(torch.utils.data.Dataset):
 

@@ -318,7 +318,6 @@ class PipelineModule(nn.Module):
                     inputs = inputs[0]
                 
                 record_path = os.getenv("amp_record_path")   
-                #record_mp_path = os.getenv("amp_record_mp_path")
                 record_iter = int(os.getenv("amp_iter"))  
                 
                 if record_path is not None and record_iter == 35:
@@ -339,36 +338,22 @@ class PipelineModule(nn.Module):
                         else:
                             ds_utils.set_random_seed(new_seed)
 
-                    #time_s = time.time()
                     inputs = layer(inputs)
-                    #torch.cuda.synchronize()
-                    #print(f"{idx}: {time.time() - time_s}")
                     # pick the 35th iteration
                     if record_path is not None and record_iter == 35: #and dist.get_rank() == 0:
                         torch.cuda.synchronize()
                         time_used = time.time() - time_s
-                     #   mp_used = os.getenv("amp_mp_value")
-                     #   if mp_used is not None:
-                     #       mp_used = float(mp_used)
-                     #       print(f"it is calculating: {time_used} {mp_used}")
-                     #       time_used -= mp_used
                         cost_e.append(time_used)
-                #print(f"running mp size {dist.get_world_size()} {record_path is None} {record_iter}") 
                 if record_path is not None and record_iter == 35 and dist.get_rank() == 0:
                     print(f"saving profile results to {record_path}")
                     np.save(record_path, np.asarray(cost_e))
                 return inputs
-            #param_ = os.environ["mp_count_param"]
-            #print(f"single forward has mp param {param_}")
-            #os.environ["mp_count_param"] = str(0)
             return exec_func
 
         if self.activation_checkpoint_interval == 0:
-            print(f"here: {self.global_rank}")
             func = exec_range_func(0, len(self.forward_funcs))
             x = func(forward_input)
         else:
-            print(f"there: {self.global_rank}")
             num_layers = len(self.forward_funcs)
             x = forward_input
             for start_idx in range(0, num_layers, self.activation_checkpoint_interval):
@@ -409,7 +394,6 @@ class PipelineModule(nn.Module):
         
         # Each stage gets a simple uniform number of layers.
         else:
-           # method = "parameters"
             if method == 'uniform':
                 num_layers = len(self._layer_specs)
                 self.parts = ds_utils.partition_uniform(num_items=num_layers,
@@ -430,33 +414,13 @@ class PipelineModule(nn.Module):
                 raise NotImplementedError(f'Partitioning method {method} not implemented.')
             else:
                 raise NotImplementedError(f'Partitioning method {method} not implemented.')
-        #self.parts = [0, 4, 11, 18, 56]
-        #self.parts = [0, 4, 6, 8, 56]
-        #self.parts = [0, 18, 20, 28, 56]
-        # pingheng 1
-        #self.parts = [0, 20, 41, 51, 56]
-        # pingheng2
-        #self.parts = [0, 15, 20, 47, 56]
-        # pingheng2 - nearest 
-        #self.parts  = [0, 20, 40, 51, 56]
-        #self.parts  = [0, 19, 40, 51, 56]
-        # self.parts = [0, 13, 21, 42, 56] 
-        # self.parts = [0, 31, 56]
-       # self.parts = [0, 25, 41, 51, 56]
-        #self.parts = [0, 19, 31, 51,56]
-        #self.parts = [0, 18, 30, 50,56]
-        #self.parts= [0, 19, 40, 51, 56] 
-        #self.parts = [0, 18, 31, 50, 56]
-        # self.parts = [0, 25, 41, 51, 56]
-        #self.parts = [0, 17, 29, 50, 56]
-      #  self.parts = [0, 5, 9, 36, 37, 38, 39, 40, 44]
        # Print some information on the partitioning.
         if self.global_rank == 0:
-            print(f"{self.parts} using {method}")
+            print(f"pipeline split: {self.parts} using {method}")
             for stage in range(num_stages):
                 start = self.parts[stage]
                 stop = self.parts[stage + 1]
-                print(f'stage={stage} layers={stop - start}')
+                #print(f'stage={stage} layers={stop - start}')
                 for idx, layer in enumerate(self._layer_specs[start:stop]):
                     name = str(layer)
                     if isinstance(layer, LayerSpec):
@@ -468,7 +432,7 @@ class PipelineModule(nn.Module):
                             name = layer.__name__
                         except AttributeError:
                             pass
-                    print(f'    {idx+start:2d}: {name}')
+                    #print(f'    {idx+start:2d}: {name}')
             if self.loss_fn:
                 try:
                     print(f'  loss: {self.loss_fn.__name__}')

@@ -66,8 +66,6 @@ class PipelineEngine(DeepSpeedEngine):
 
         # Set Grid and Communication Groups
         self.grid = self.module._grid
-#        print(self.grid)
-#        assert False
         if self.grid.get_global_rank() == 0:
             logger.info(f'CONFIG: micro_batches={self.micro_batches} '
                         f'micro_batch_size={self.micro_batch_size}')
@@ -284,8 +282,8 @@ class PipelineEngine(DeepSpeedEngine):
 
         # Do the work
         self.timers('train_batch').start()
-        if torch.distributed.get_rank() == 0:
-            print("Using Train Schedule.")
+        #if torch.distributed.get_rank() == 0:
+        #    print("Using Train Schedule.")
         sched = schedule.TrainSchedule(micro_batches=self.micro_batches,
                                        stages=self.num_stages,
                                        stage_id=self.stage_id)
@@ -484,11 +482,9 @@ class PipelineEngine(DeepSpeedEngine):
         if mp_rank == 0:
             if self.data_iterator is None:
                 raise ValueError(f"RANK={self.global_rank} no data iterator provided.")
-            #print("-------------------", self.data_iterator)
             assert isinstance(self.data_iterator, torch.utils.data.dataloader._MultiProcessingDataLoaderIter)
             batch = next(self.data_iterator)
-            #print(f"pp next {batch.shape} using {self.data_iterator}")
-            print(batch)
+            #print(batch)
         # All MP ranks participate in batch_fn, where they might broadcast the data.
         if self.batch_fn:
             batch = self.batch_fn(batch)
@@ -496,12 +492,9 @@ class PipelineEngine(DeepSpeedEngine):
         return batch
 
     def _exec_forward_pass(self, buffer_id):
-        #time_s0 = time.time()
-        #time_s = time.time()
         self.tput_timer.start()
         self.mem_status('BEFORE FWD', reset_max=True)
 
-        # print("starting")
         if isinstance(self.pipe_buffers['inputs'][buffer_id], tuple):
             inputs = tuple(t.clone() for t in self.pipe_buffers['inputs'][buffer_id])
         else:
@@ -525,13 +518,9 @@ class PipelineEngine(DeepSpeedEngine):
         # tensor changes across batches
         self._zero_grads(inputs)
         
-        # print("going to")
-        #print(f"before super: {time.time() - time_s}")
         time_s = time.time()
         outputs = super().forward(inputs)
-        #print(f"in forward {time.time() - time_s}")
 
-        # print("finish")
         time_s = time.time()
         # Partition the outputs if we are not the last stage
         if self.is_pipe_partitioned and not self.is_last_stage():
@@ -541,12 +530,10 @@ class PipelineEngine(DeepSpeedEngine):
             outputs[0].data = torch.zeros(1)
             self.pipe_buffers['output_tensors'][buffer_id] = outputs[0]
             # Inject the partitioned tensor into the output before sending
-            #print(outputs)#, outputs.shape)
             outputs = tuple([part.to_meta(), part.data(), outputs[1]])
             part = None
 
         self.pipe_buffers['outputs'][buffer_id] = outputs
-        #print(f"after super: {time.time() - time_s}")
 
         # Optionally compute loss on the last device
         if self.is_last_stage():
@@ -558,7 +545,6 @@ class PipelineEngine(DeepSpeedEngine):
                 # Some models just return loss from forward()
                 self.loss = outputs
 
-            #print(f"last stage {time.time() - time_s}")
             if isinstance(self.loss, torch.Tensor):
                 if self.total_loss is None:
                     self.total_loss = torch.zeros_like(self.loss)
@@ -568,9 +554,7 @@ class PipelineEngine(DeepSpeedEngine):
                     self.total_loss = [torch.zeros_like(l) for l in self.loss]
                 for idx, l in enumerate(self.loss):
                     self.total_loss[idx] += l.detach()
-           # print(f"last stage {time.time() - time_s}")
-         #   print(f"total {time.time() - time_s0}")
-
+    
     def _exec_backward_pass(self, buffer_id):
         assert self.optimizer is not None, "must provide optimizer during " \
                                            "init in order to use backward"
@@ -591,7 +575,6 @@ class PipelineEngine(DeepSpeedEngine):
             self.timers('backward').start()
             self.timers('backward_inner_microstep').start()
             self.timers('backward_inner').start()
-        #print("--------calling parent backward-------------")
         # Reconstruct if we previously partitioned the output. We must be
         # careful to also restore the computational graph of the tensors we partitioned.
         if self.is_pipe_partitioned:
@@ -613,14 +596,12 @@ class PipelineEngine(DeepSpeedEngine):
 
         grad_tensors = self.grad_layer
         if self.is_grad_partitioned:
-            #print(f'RANK={self.global_rank} BEFORE-BWD restoring grad={self.grad_layer[0].size()} {self.grad_layer[1].size()}')
             part_grad = PartitionedTensor.from_meta(
                 meta=self.grad_layer[0],
                 local_part=self.grad_layer[1],
                 group=self.grid.get_slice_parallel_group())
             grad_tensors = tuple([part_grad.full(), self.grad_layer[2]])
             part_grad = None
-            #print(f'RANK={self.global_rank} BEFORE-BWD restored grad={self.grad_layer[0].size()} {self.grad_layer[1].size()}')
 
         # This handles either a single tensor or tuple of tensors.
         if isinstance(outputs, tuple):
@@ -652,8 +633,6 @@ class PipelineEngine(DeepSpeedEngine):
         if self.is_first_stage():
             loaded = None
             if torch.is_tensor(batch[0]):
-                #print(batch)
-                #print(f"engine: {batch.shape}")
                 loaded = batch[0].clone().to(self.device).detach()
                 loaded.requires_grad = loaded.is_floating_point()
             else:
@@ -937,7 +916,6 @@ class PipelineEngine(DeepSpeedEngine):
             self.timers('pipe_recv_grad').start()
 
         outputs = self.pipe_buffers['outputs'][buffer_id]
-        #print(outputs)
         # XXX these shapes are hardcoded for Megatron
         # Restore partitioned output if it was partitioned and we are sending full gradients
         if self.is_pipe_partitioned and not self.is_grad_partitioned:
@@ -959,12 +937,9 @@ class PipelineEngine(DeepSpeedEngine):
                 sizes = [list(t.size()) for t in outputs if t.is_floating_point()]
                 self.grad_layer = self._allocate_buffers(sizes, num_buffers=1)[0]
 
-        #print("-=here------------")
         if isinstance(self.grad_layer, torch.Tensor):
             p2p.recv(self.grad_layer, self.next_stage)
-        #    print("enter if")
         else:
-        #    print("enter else")
             assert isinstance(outputs, tuple)
             for idx, buffer in enumerate(self.grad_layer):
                 # XXX GPT-2 hack
@@ -972,9 +947,7 @@ class PipelineEngine(DeepSpeedEngine):
                     buffer.data = torch.zeros(buffer.size(),
                                               dtype=torch.long,
                                               device=self.device)
-        #        print(buffer)
                 p2p.recv(buffer, self.next_stage)
-        # print("-=there------------", self.global_rank)
         if self.wall_clock_breakdown():
             self.timers('pipe_recv_grad').stop()
 
@@ -1184,17 +1157,11 @@ class PipelineEngine(DeepSpeedEngine):
 
     def _exec_schedule(self, pipe_schedule):
         self._reserve_pipe_buffers(pipe_schedule.num_pipe_buffers())
-        # For each step in the schedule
-        #if dist.get_rank() == 0:
-        #    print(f"using schedule: {pipe_schedule}")
         for step_cmds in pipe_schedule:
             if dist.get_rank() == 0:
-                print(f"rank 0 ---- schedule: {step_cmds}")
+                pass
+                #logger.info(f"schedule: {step_cmds}")
         for step_cmds in pipe_schedule:
-            #if dist.get_rank() == 0:
-            #    print(f"rank 0 ---- schedule: {step_cmds}")
-            # For each instruction in the step
-            # print(step_cmds)
             for cmd in step_cmds:
                 #print("before",cmd, self.global_rank)
                 if type(cmd) not in self._INSTRUCTION_MAP:
@@ -1205,9 +1172,8 @@ class PipelineEngine(DeepSpeedEngine):
                 # Equivalent to: self._exec_forward_pass(buffer_id=0)
                 time_s = time.time()
                 self._exec_instr = MethodType(self._INSTRUCTION_MAP[type(cmd)], self)
-                # print("before",cmd, self.global_rank)
                 self._exec_instr(**cmd.kwargs)
-                print(f"rank {self.global_rank} after {cmd} {time.time() - time_s}",)
+                #logger.info(f"rank {self.global_rank} after {cmd} {time.time() - time_s}",)
 
     def set_batch_fn(self, fn):
         """Execute a post-processing function on input data.

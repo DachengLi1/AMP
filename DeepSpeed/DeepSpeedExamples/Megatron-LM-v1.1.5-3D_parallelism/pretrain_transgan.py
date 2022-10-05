@@ -154,7 +154,6 @@ def train_valid_test_datasets_provider(args):
     #     skip_warmup=(not args.mmap_warmup))
     train_ds_dis = ImageDataset(args, cur_img_size=8)
     train_ds_gen = FakeGenDataset()
-    #print(f"here? {1+1}")
     print_rank_0("> finished creating {} datasets ...".format(args.dataset))
     valid_ds = test_ds = None # TODO(hwang): check if GAN training needs validation and test datasets
 

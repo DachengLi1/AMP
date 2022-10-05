@@ -5,9 +5,9 @@ GPUS_PER_NODE=1
 MASTER_ADDR=localhost
 MASTER_PORT=6009
 
-DATA_PATH=/home/ubuntu/datasets/datasets/preprocessed_data/my-gpt2_text_document
-VOCAB_PATH=/home/ubuntu/datasets/datasets/gpt2-vocab.json
-MERGE_PATH=/home/ubuntu/datasets/datasets/gpt2-merges.txt
+DATA_PATH=gpt_data/my-gpt2_text_document
+VOCAB_PATH=gpt_data/gpt2-vocab.json
+MERGE_PATH=gpt_data/gpt2-merges.txt
 CHECKPOINT_PATH=/home/ubuntu/DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism/examples/ckpts/gpt2_1542m_ds_distributed
 
 script_path=$(realpath $0)

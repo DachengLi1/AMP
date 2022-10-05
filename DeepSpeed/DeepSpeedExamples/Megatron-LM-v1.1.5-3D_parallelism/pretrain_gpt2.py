@@ -22,7 +22,7 @@ from megatron import print_rank_0
 from megatron import get_timers
 from megatron import get_tokenizer
 from megatron import mpu
-from megatron.data.gpt2_dataset import build_train_valid_test_datasets
+from megatron.data.gpt2_dataset import FakeGPT2Dataset
 from megatron.model import GPT2Model, GPT2ModelPipe
 from megatron.training import pretrain
 from megatron.utils import get_ltor_masks_and_position_ids
@@ -141,14 +141,16 @@ def train_valid_test_datasets_provider(train_val_test_num_samples):
 
     print_rank_0('> building train, validation, and test datasets '
                  'for GPT2 ...')
-    train_ds, valid_ds, test_ds = build_train_valid_test_datasets(
-        data_prefix=args.data_path,
-        data_impl=args.data_impl,
-        splits_string=args.split,
-        train_valid_test_num_samples=train_val_test_num_samples,
-        seq_length=args.seq_length,
-        seed=args.seed,
-        skip_warmup=(not args.mmap_warmup))
+    #train_ds, valid_ds, test_ds = build_train_valid_test_datasets(
+    #    data_prefix=args.data_path,
+    #    data_impl=args.data_impl,
+    #    splits_string=args.split,
+    #    train_valid_test_num_samples=train_val_test_num_samples,
+    #    seq_length=args.seq_length,
+    #    seed=args.seed,
+    #    skip_warmup=(not args.mmap_warmup))
+    train_ds = FakeGPT2Dataset()
+    valid_ds = test_ds = None
     print_rank_0("> finished creating GPT2 datasets ...")
 
     return train_ds, valid_ds, test_ds
