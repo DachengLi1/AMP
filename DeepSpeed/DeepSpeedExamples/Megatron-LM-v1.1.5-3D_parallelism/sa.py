@@ -345,7 +345,7 @@ def amp_no_placement_strategy(M, N, gbs, known):
     if len(known.keys()) == 0:
         return None
 
-    print(known)
+    #print(known)
     mbs = list(known.keys())[0]
     (h, w) = known[mbs].pop(0)
     if len(known[mbs]) == 0:

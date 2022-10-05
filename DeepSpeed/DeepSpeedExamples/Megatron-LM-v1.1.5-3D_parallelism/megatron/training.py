@@ -160,7 +160,6 @@ def pretrain_transgan(train_valid_test_dataset_provider, model_provider,
     train_data_iterator, valid_data_iterator, test_data_iterator \
         = build_train_valid_test_data_iterators_transgan(
             train_valid_test_dataset_provider)
-    #print(f"here is {train_data_iterator} --------------------------------------- ")
     timers('train/valid/test data iterators').stop()
 
     # Print setup timing.
@@ -760,8 +759,7 @@ def train(forward_step_func, model, optimizer, lr_scheduler,
     
     time_amp = 0
     os.environ["mp_count_param"] = str(0)
-    while iteration < 41:# args.train_iters:
-        #print(iteration)
+    while iteration < 41:
         os.environ["amp_iter"] = str(iteration)
         if iteration == 20:
             time_amp = time.time()
@@ -769,22 +767,17 @@ def train(forward_step_func, model, optimizer, lr_scheduler,
         if iteration == 40 and torch.distributed.get_rank() == 0:
             time_used = round((time.time() - time_amp) / 20,2)
             # record time used here
-            
             exp_name = args.exp_name
             home_path = os.environ['HOME']
             dir_path = os.path.join(home_path, "amp_simulate")
-            assert os.path.isdir(dir_path)
-            #    os.mkdir(dir_path)
+            #assert os.path.isdir(dir_path)
             record_path = os.path.join(dir_path, f"{exp_name}.txt")
-            print(f"checking record_path exist: {record_path}")
-            assert os.path.exists(record_path)
-            #    with open(record_path, "w") as tf:
-            #        pass
-            f = open(record_path, "a")
-            f.write(str(time_used) + "\n")
-            f.close()
-        #    import sys
-        #    sys.exit()
+            #print(f"checking record_path exist: {record_path}")
+            #assert os.path.exists(record_path)
+            if os.path.exists(record_path):
+                f = open(record_path, "a")
+                f.write(str(time_used) + "\n")
+                f.close()
 
         timers('interval time').start()
         loss_dict, skipped_iter = train_step(forward_step_func,
@@ -793,7 +786,7 @@ def train(forward_step_func, model, optimizer, lr_scheduler,
                                              optimizer,
                                              lr_scheduler)
         param_ = os.environ["mp_count_param"]
-        print(f"single forward has mp param {param_}")
+        #print(f"single forward has mp param {param_}")
         os.environ["mp_count_param"] = str(0)
         iteration += 1
 
@@ -862,21 +855,6 @@ def train_transgan(forward_step_func, model, optimizer, lr_scheduler,
 
     # we will first need to run one iteration of discriminator
     dis_optimizer.zero_grad()
-    #imgs, _ = next(train_data_iterator)
-
-    #real_imgs = imgs.type(torch.cuda.FloatTensor).cuda(args.gpu, non_blocking=True)
-    #z = torch.cuda.FloatTensor(np.random.normal(0, 1, (imgs.shape[0], args.latent_dim))).cuda(args.gpu, non_blocking=True)
-
-    # ---------------------
-    #  Train Discriminator
-    # ---------------------
-
-    #real_validity = dis_model(real_imgs)
-    #fake_imgs = gen_model(z, epoch).detach()
-    #assert fake_imgs.size() == real_imgs.size(), f"fake_imgs.size(): {fake_imgs.size()} real_imgs.size(): {real_imgs.size()}"
-
-    #fake_validity = dis_net(fake_imgs)
-
     # Tracking loss.
     total_loss_dict = {}
 
@@ -884,25 +862,20 @@ def train_transgan(forward_step_func, model, optimizer, lr_scheduler,
     iteration = args.iteration
 
     report_memory_flag = True
-    while iteration < 41:# args.train_iters:
+    while iteration < 41:
         os.environ["amp_iter"] = str(iteration)
-        #print(iteration)
         if iteration == 20:
             time_amp = time.time()
 
         if iteration == 40 and torch.distributed.get_rank() == 0:
             time_used = round((time.time() - time_amp) / 20,2)
             # record time used here
-
             exp_name = args.exp_name
             home_path = os.environ['HOME']
             dir_path = os.path.join(home_path, "amp_simulate")
             assert os.path.isdir(dir_path)
-            #    os.mkdir(dir_path)
             record_path = os.path.join(dir_path, f"{exp_name}.txt")
             assert os.path,exists(record_path)
-            #    with open(record_path, "w") as tf:
-            #        pass
             f = open(record_path, "a")
             f.write(str(time_used) + "\n")
             f.close()
@@ -913,13 +886,11 @@ def train_transgan(forward_step_func, model, optimizer, lr_scheduler,
                                              gen_model,
                                              gen_optimizer,
                                              gen_lr_scheduler)
-        #assert False
         timers('interval time').stop()
         
         iteration += 1
 
         # Logging.
-        # hongyi: let's comment this part out for now
         loss_scale = None
         #if args.fp16:
         #    #loss_scale = optimizer.cur_scale if args.deepspeed else optimizer.loss_scale
@@ -928,25 +899,6 @@ def train_transgan(forward_step_func, model, optimizer, lr_scheduler,
                                           gen_optimizer.param_groups[0]['lr'],
                                           iteration, loss_scale,
                                           report_memory_flag, skipped_iter)
-
-        # Autoresume
-        #if args.adlr_autoresume and \
-        #   (iteration % args.adlr_autoresume_interval == 0):
-        #    check_adlr_autoresume_termination(iteration, gen_model, gen_optimizer,
-        #                                      lr_scheduler)
-
-        # Checkpointing
-        #if args.save and args.save_interval and \
-        #   iteration % args.save_interval == 0:
-        #    save_checkpoint(iteration, gen_model, gen_optimizer, lr_scheduler)
-
-        # Evaluation
-        #if args.eval_interval and iteration % args.eval_interval == 0 and \
-        #   args.do_valid:
-        #    prefix = 'iteration {}'.format(iteration)
-        #    evaluate_and_print_results(prefix, forward_step_func,
-        #                               valid_data_iterator, model,
-        #                               iteration, False)
 
         if args.exit_interval and iteration % args.exit_interval == 0:
             torch.distributed.barrier()
@@ -1066,31 +1018,6 @@ def build_train_valid_test_data_iterators_transgan(
         # Build the datasets.
         (train_ds_gen, train_ds_dis), valid_ds, test_ds = build_train_valid_test_datasets_provider(
             args=args)
-
-        # def make_data_loader(dataset):
-        #     """Buld dataloader given an input dataset."""
-        #     if dataset is None:
-        #         return None
-        #     args = get_args()
-
-        #     # Data parallel arguments.
-        #     world_size = mpu.get_data_parallel_world_size()
-        #     rank = mpu.get_data_parallel_rank()
-        #     global_batch_size = args.batch_size * world_size
-        #     num_workers = args.num_workers
-
-        #     # Use a simple sampler with distributed batch sampler.
-        #     sampler = torch.utils.data.SequentialSampler(dataset)
-        #     batch_sampler = DistributedBatchSampler(sampler=sampler,
-        #                                             batch_size=global_batch_size,
-        #                                             drop_last=True,
-        #                                             rank=rank,
-        #                                             world_size=world_size)
-        #     # Torch dataloader.
-        #     return torch.utils.data.DataLoader(dataset,
-        #                                        batch_sampler=batch_sampler,
-        #                                        num_workers=num_workers,
-        #                                        pin_memory=True)
 
         # Build dataloders.
         train_dataloader_gen = make_data_loader_transgan(train_ds_gen)

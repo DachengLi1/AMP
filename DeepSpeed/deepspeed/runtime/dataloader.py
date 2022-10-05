@@ -45,7 +45,6 @@ class DeepSpeedDataLoader(object):
         self.tput_timer = tput_timer
         self.batch_size = batch_size
         
-        print("Using deepspeed dataloader.")
         assert False, "should not use deepspeed dataloader."
         if local_rank >= 0:
             if data_sampler is None:
@@ -85,7 +84,7 @@ class DeepSpeedDataLoader(object):
         return next(self.data)
 
     def _create_dataloader(self):
-        print("ds data size", self.batch_size)
+        print("DeepSpeed data size", self.batch_size)
         assert False
         if self.collate_fn is None:
             self.dataloader = DataLoader(self.dataset,

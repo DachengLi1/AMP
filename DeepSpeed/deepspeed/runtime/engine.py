@@ -842,7 +842,7 @@ class DeepSpeedEngine(Module):
             data_parallel_world_size = self.mpu.get_data_parallel_world_size()
             data_parallel_rank = self.mpu.get_data_parallel_rank()
 
-        print(f"dataloader bs {batch_size}  -----------------------------------------------------------------------------------")
+        print(f"dataloader bs {batch_size}")
         assert False
         return DeepSpeedDataLoader(dataset=dataset,
                                    batch_size=batch_size,
@@ -1028,7 +1028,6 @@ class DeepSpeedEngine(Module):
             self.timers('backward_allreduce_microstep').start()
             self.timers('backward_allreduce').start()
 
-        print(f"did I enable? {self.enable_backward_allreduce}")
         if self.enable_backward_allreduce:
             self.allreduce_gradients()
 
@@ -1097,8 +1096,6 @@ class DeepSpeedEngine(Module):
             self.skipped_steps += 1
         else:
             if self.lr_scheduler is not None:
-                #print(self.lr_scheduler, "-------------")
-                #print(lr_kwargs)
                 self.lr_scheduler.step(**(lr_kwargs or {}))
             if report_progress and (self.global_steps + 1) % self.steps_per_print() == 0:
                 self._report_progress(self.global_steps + 1)
@@ -1303,7 +1300,7 @@ class DeepSpeedEngine(Module):
                 self.csr_allreduce_no_retain(bucket)
             else:
                 self.allreduce_no_retain(bucket, numel_per_bucket=elements_per_buffer)
-        print(f"dp allreduce with size {self.allreduce_param_count}")
+        #logger.info(f"data parallelism allreduce with size {self.allreduce_param_count}")
         self.allreduce_param_count = 0
 
     def csr_allreduce_no_retain(self, bucket):

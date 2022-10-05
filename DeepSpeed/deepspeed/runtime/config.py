@@ -593,8 +593,7 @@ class DeepSpeedConfig(object):
         self._initialize_params(self._param_dict)
         self._configure_train_batch_size()
         self._do_sanity_check()
-        #assert self.gradient_accumulation_steps == 1
-        print("haha", self.__dict__)
+        logger.info(f"Using config: {self.__dict__}")
 
     def _initialize_params(self, param_dict):
         self.train_batch_size = get_train_batch_size(param_dict)
@@ -614,14 +613,12 @@ class DeepSpeedConfig(object):
         self.zero_config = DeepSpeedZeroConfig(param_dict)
         self.zero_optimization_stage = self.zero_config.stage
         self.zero_enabled = self.zero_optimization_stage > 0
-        print(f"zero is enabaled: {self.zero_enabled} ---------------")
         assert not self.zero_enabled
         self.activation_checkpointing_config = DeepSpeedActivationCheckpointingConfig(
             param_dict)
 
         self.gradient_clipping = get_gradient_clipping(param_dict)
         self.fp16_enabled = get_fp16_enabled(param_dict)
-        #assert not self.fp16_enabled
         self.amp_enabled = get_amp_enabled(param_dict)
         self.amp_params = get_amp_params(param_dict)
         self.loss_scale = get_loss_scale(param_dict)
@@ -666,7 +663,7 @@ class DeepSpeedConfig(object):
         micro_batch = self.train_micro_batch_size_per_gpu
         grad_acc = self.gradient_accumulation_steps
         
-        print("ds check:", train_batch, micro_batch, grad_acc)
+        logger.info("Deepspeed batch size config:", train_batch, micro_batch, grad_acc)
         assert train_batch > 0, \
             f'Train batch size: {train_batch} has to be greater than 0'
 

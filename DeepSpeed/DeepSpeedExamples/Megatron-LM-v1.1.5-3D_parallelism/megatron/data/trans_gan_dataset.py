@@ -326,8 +326,6 @@ class FakeGenDataset(object):
         return self.data.size()[0]
 
     def __getitem__(self, idx):
-        #print(f"size ----------- {self.data.shape}, {self.data[idx:idx+self.bs, :].shape}")
-        #print(f"data shape: {self.data.shape} {self.data[idx:idx+self.bs, :].shape}")
         return self.data[:self.bs, :]
 
 

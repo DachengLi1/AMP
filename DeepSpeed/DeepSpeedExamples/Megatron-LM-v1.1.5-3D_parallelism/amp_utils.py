@@ -74,7 +74,7 @@ def simulate(rank_maps, partitions, gbs, micro_bs_list, model_config, oth_list, 
     hosts = get_host()[1:]
     for i in range(len(rank_maps)):
         rank_map = rank_maps[i]
-        print(f"debug debug {rank_map}")
+        print(f"debug rank_map {rank_map}")
         partition = partitions[i]
         micro_bs = int(micro_bs_list[i].item())
         oth = oth_list[i]
@@ -114,14 +114,14 @@ def simulate(rank_maps, partitions, gbs, micro_bs_list, model_config, oth_list, 
             for oth_host in hosts:
                 remove_remote(oth_host, partition_path)
 
-        json_path = os.path.join(home_path, 'DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism/examples/ds_config.json')
+        json_path = os.path.join(home_path, 'AMP/DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism/examples/ds_config.json')
 
         if model_type == "gpt2":
-            script_path = os.path.join(home_path,"DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism/examples/ds_pretrain_gpt2_pipe.sh")
+            script_path = os.path.join(home_path,"AMP/DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism/examples/ds_pretrain_gpt2_pipe.sh")
             conf = f" {mp} {pp} {config_n} {config_h} {micro_bs} {gas} {exp_name}"
         else:
             assert model_type == "transgan"
-            script_path = os.path.join(home_path,"DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism/examples/ds_pretrain_gpt2_pipe_transgan.sh")
+            script_path = os.path.join(home_path,"AMP/DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism/examples/ds_pretrain_gpt2_pipe_transgan.sh")
             conf = f" {mp} {pp} {config_n} {config_h} {micro_bs} {gas} {exp_name}"
 
         dir_path = os.path.join(home_path, "amp_simulate")
