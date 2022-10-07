@@ -25,7 +25,6 @@ class AMP(nn.Module):
         
         super().__init__()
         self.model_config = model_config
-        self.exp_name = "init_" + exp_name 
         #self.estimate = estimate
         self.model_type = model_config["type"]
         assert self.model_type == "gpt2" 

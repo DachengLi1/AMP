@@ -280,7 +280,7 @@ def main(args=None):
 
     if not args.master_addr:
         first_host = list(active_resources.keys())[0]
-        hostname_cmd = ["ssh -i ~/rulin_pretrain.pem {} hostname -I".format(first_host)]
+        hostname_cmd = ["ssh {} hostname -I".format(first_host)]
         result = subprocess.check_output(hostname_cmd, shell=True)
         args.master_addr = result.decode('utf-8').split()[0]
         logger.info("Using IP address of {} for node {}".format(
