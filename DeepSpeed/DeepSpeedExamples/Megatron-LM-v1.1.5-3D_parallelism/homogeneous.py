@@ -4,6 +4,7 @@ import math
 import time
 from collections import defaultdict
 import operator
+import shutil
 import random
 import os
 import copy
@@ -25,6 +26,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--full", action="store_true", help="Whether to run real trials")
+parser.add_argument("--budget", type=int, default=-1, help="how many real trials to launch")
 
 args = parser.parse_args()
 # cluster information
@@ -45,7 +47,6 @@ cluster_info = {}
 for i in range(N):
     cluster_info[i] = [torch.tensor([50 * 1e9 / 32]).float(), torch.tensor([50 * 1e9 / 32]).float()]
 
-# Model information: 16 layers network, 3 micro-batches
 model_config = {"hidden_size": torch.tensor([1024]).float(), 
                 "sequence_length": torch.tensor([1024]).float(), 
                 "num_layers": torch.tensor([24]).float(), 
@@ -60,6 +61,12 @@ record_file = f"{os.path.join(dir_path, exp_name)}_{time_stamp}.txt"
 simulate_dir = os.path.join(home_path, "amp_simulate")
 if not os.path.exists(simulate_dir):
     os.mkdir(simulate_dir)
+
+# remove cache directory from last run
+if os.path.exists(os.path.join(home_path, "tmp")):
+    for root, dirs, files in os.walk(os.path.join(home_path, "tmp")):
+        for f in files:
+            os.unlink(os.path.join(root, f))
 
 # save this name to env
 os.environ["amp_log_path"] = record_file
@@ -92,10 +99,9 @@ while True:
             rank_map, partition, cost = model(model_args)
         
         want_simulate.append(((mbs, oth, rank_map, partition), cost))
-   #     with open(record_file, "a") as fp:
-   #         fp.write(f"amp predict - mbs: {mbs} degree: {oth}, ranks: {rank_map}, partition: {partition}, p_cost: {cost} \n")                
+    #if len(want_simulate) > 5:
+    #    break
     iter_count += 1
-
 time_e = time.time()
 print(f"finish amp search without placement in {iter_count} iterations in {time_e - time_s}")
 
@@ -107,16 +113,19 @@ with open(record_file, "a") as fp:
 
 # Run real trials to get ground truth runtime
 if args.full:
-    budget = len(want_simulate)
+    if args.budget == -1:
+        budget = len(sorted_settings)
+    else:
+        budget = args.budget
     simulate_start = time.time()
     for i in range(budget):
-        can = want_simulate[i][0]
+        can = sorted_settings[i][0]
         rmap = None
         mbs = can[0]
         oth = can[1]
         partition = can[3]
-        gt_cost = simulate([rmap], [partition], torch.ones(1,)*global_bs, to_float_torch([mbs]), model_config, oth, exp_name)
+        gt_cost = simulate([rmap], [partition], torch.ones(1,)*global_bs, to_float_torch([mbs]), model_config, [oth], exp_name)
         gt_cost = gt_cost[0]
         with open(record_file, "a") as fp:
-            fp.write(f"Simulating result: {rmap}, {partition}, {mbs}, {oth}, with p_cost: {want_simulate[i][1]}, r_cost: {gt_cost} \n")
-            fp.write("running real trials till iter {i} takes {time.time() - time_s}")
+            fp.write(f"Simulating result: {rmap}, {partition}, {mbs}, {oth}, with p_cost: {sorted_settings[i][1]}, r_cost: {gt_cost} \n")
+            fp.write(f"running real trials till iter {i} takes {time.time() - time_s} \n")

@@ -149,7 +149,7 @@ class VocabParallelEmbedding(torch.nn.Module):
 
     def forward(self, input_):
         if self.first_time:
-            #print(f"input size {input_.size()}")
+            print(f"input size {input_.size()}")
             self.first_time = False
 
         if self.model_parallel_size > 1:
@@ -213,7 +213,7 @@ class ColumnParallelLinear(torch.nn.Module):
         # Divide the weight matrix along the last dimension.
         world_size = get_model_parallel_world_size()
         self.output_size_per_partition = divide(output_size, world_size)
-        #print(f"debug:{output_size} {world_size}")
+        print(f"debug:{output_size} {world_size}")
         self.skip_bias_add = skip_bias_add
 
         # Parameters.
@@ -262,7 +262,7 @@ class ColumnParallelLinear(torch.nn.Module):
         # Matrix multiply.
 
         #vim eprint(input_.shape)
-        #print(f"in colume parallel: {input_.shape} {self.weight.shape}")  
+        print(f"in column parallel: {input_.shape} {self.weight.shape}")  
         bias = self.bias if not self.skip_bias_add else None
         time_s = time.time()
         #print(input_parallel.dtype, self.weight.dtype)

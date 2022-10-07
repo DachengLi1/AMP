@@ -79,9 +79,9 @@ def simulate(rank_maps, partitions, gbs, micro_bs_list, model_config, oth_list, 
         micro_bs = int(micro_bs_list[i].item())
         oth = oth_list[i]
     
-        mp = int(oth["orig_mp"].item())
-        pp = int(oth["orig_pp"].item())
-        dp = int(oth["orig_dp"].item())
+        mp = int(oth["mp_deg"].item())
+        pp = int(oth["pp_deg"].item())
+        dp = int(oth["dp_deg"].item())
         gas =  int((gbs / (dp * micro_bs)).item())
         dir_path = os.path.join(home_path, 'tmp')
 
@@ -121,7 +121,7 @@ def simulate(rank_maps, partitions, gbs, micro_bs_list, model_config, oth_list, 
             conf = f" {mp} {pp} {config_n} {config_h} {micro_bs} {gas} {exp_name}"
         else:
             assert model_type == "transgan"
-            script_path = os.path.join(home_path,"AMP/DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism/examples/ds_pretrain_gpt2_pipe_transgan.sh")
+            script_path = os.path.join(home_path,"AMP/DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism/examples/ds_pretrain_transgan_pipe.sh")
             conf = f" {mp} {pp} {config_n} {config_h} {micro_bs} {gas} {exp_name}"
 
         dir_path = os.path.join(home_path, "amp_simulate")
