@@ -1094,7 +1094,7 @@ def build_train_valid_test_data_iterators_transgan(
 
         # Build dataloders.
         train_dataloader_gen = make_data_loader_transgan(train_ds_gen)
-        train_dataloader_dis = make_data_loader_transgan(train_ds_dis.train_dataset)
+        #train_dataloader_dis = make_data_loader_transgan(train_ds_dis.train_dataset)
         #valid_dataloader = make_data_loader(valid_ds)
         #test_dataloader = make_data_loader(test_ds)
 
@@ -1128,8 +1128,8 @@ def build_train_valid_test_data_iterators_transgan(
     if train_dataloader_gen is not None:
         train_dataloader_gen.batch_sampler.start_iter = args.iteration % \
             len(train_dataloader_gen)
-        train_dataloader_dis.batch_sampler.start_iter = args.iteration % \
-            len(train_dataloader_dis)
+        #train_dataloader_dis.batch_sampler.start_iter = args.iteration % \
+        #    len(train_dataloader_dis)
         print_rank_0('setting training data start iteration to {}'.
                      format(train_dataloader_gen.batch_sampler.start_iter))
     if valid_dataloader is not None:
@@ -1146,10 +1146,10 @@ def build_train_valid_test_data_iterators_transgan(
     else:
         train_data_iterator_gen = None
         
-    if train_dataloader_dis is not None:
-        train_data_iterator_dis = iter(train_dataloader_dis)
-    else:
-        train_data_iterator_dis = None
+    #if train_dataloader_dis is not None:
+    #    train_data_iterator_dis = iter(train_dataloader_dis)
+    #else:
+    #    train_data_iterator_dis = None
 
     if valid_dataloader is not None:
         valid_data_iterator = iter(valid_dataloader)
@@ -1161,7 +1161,7 @@ def build_train_valid_test_data_iterators_transgan(
     else:
         test_data_iterator = None
 
-    return (train_data_iterator_gen, train_data_iterator_dis), valid_data_iterator, test_data_iterator
+    return (train_data_iterator_gen, None), valid_data_iterator, test_data_iterator
 
 def build_train_valid_test_data_iterators(
         build_train_valid_test_datasets_provider):

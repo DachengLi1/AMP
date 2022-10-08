@@ -100,6 +100,8 @@ while True:
             rank_map, partition, cost = model(model_args)
         
         want_simulate.append(((mbs, oth, rank_map, partition), cost))
+    #if len(want_simulate) > 5:
+    #    break
     iter_count += 1
 
 time_e = time.time()

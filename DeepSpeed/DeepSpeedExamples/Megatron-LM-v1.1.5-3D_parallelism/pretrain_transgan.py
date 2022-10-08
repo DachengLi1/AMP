@@ -23,7 +23,7 @@ from megatron import get_timers
 from megatron import get_tokenizer
 from megatron import mpu
 #from megatron.data.gpt2_dataset import build_train_valid_test_datasets
-from megatron.data.trans_gan_dataset import ImageDataset, FakeGenDataset
+from megatron.data.trans_gan_dataset import FakeGenDataset
 from megatron.model import GPT2Model, GPT2ModelPipe
 from megatron.training import pretrain, pretrain_transgan
 from megatron.utils import get_ltor_masks_and_position_ids
@@ -152,7 +152,7 @@ def train_valid_test_datasets_provider(args):
     #     seq_length=args.seq_length,
     #     seed=args.seed,
     #     skip_warmup=(not args.mmap_warmup))
-    train_ds_dis = ImageDataset(args, cur_img_size=8)
+    train_ds_dis = None #ImageDataset(args, cur_img_size=8)
     train_ds_gen = FakeGenDataset()
     print_rank_0("> finished creating {} datasets ...".format(args.dataset))
     valid_ds = test_ds = None # TODO(hwang): check if GAN training needs validation and test datasets
