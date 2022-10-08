@@ -18,7 +18,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from sa import amp_no_placement_strategy
-from cost_het_cluster import AMP
+from cost_het_model import AMP
 from amp_utils import simulate, to_float_torch
 
 import argparse
@@ -42,21 +42,22 @@ if not os.path.exists(dir_path):
 
 cluster_info = {}
 
-# inter-node bandwidth, intra-node bandwidth
-for i in range(N-1):
-        cluster_info[i] = [torch.tensor([10 * 1e9 / 32]).float(), torch.tensor([170 * 1e9 / 32]).float()]
-cluster_info[N-1] = [torch.tensor([50 * 1e9 / 32]).float(), torch.tensor([50 * 1e9 / 32]).float()]
+for i in range(N):
+    cluster_info[i] = [torch.tensor([10 * 1e9 / 32]).float(), torch.tensor([170 * 1e9 / 32]).float()]
 
-model_config = {"hidden_size": torch.tensor([1024]).float(), 
-                "sequence_length": torch.tensor([1024]).float(), 
-                "num_layers": torch.tensor([24]).float(), 
-                "vocab_size":torch.tensor([52256]).float(),
-                "type":"gpt2"}
+depth = [12,0,0,0,0,12]
+model_config = {"hidden_size": torch.tensor([1024]).float(),
+    "sequence_length": torch.tensor([1024]).float(),
+    "num_layers": torch.tensor([sum(depth)]).float(),
+    "vocab_size":torch.tensor([52256]).float(),
+    "type":"transgan",
+    "depth": depth,
+    "bottom":9}
 
 config_h = int((model_config["hidden_size"]).item())
 config_n = int(model_config["num_layers"].item())
 time_stamp = int(time.time())
-exp_name = f"het_cluster"
+exp_name = f"het_model"
 record_file = f"{os.path.join(dir_path, exp_name)}_{time_stamp}.txt"
 simulate_dir = os.path.join(home_path, "amp_simulate")
 if not os.path.exists(simulate_dir):
@@ -71,7 +72,7 @@ if os.path.exists(os.path.join(home_path, "tmp")):
 # save this name to env
 os.environ["amp_log_path"] = record_file
 
-global_bs = 32
+global_bs = 64
 model = AMP(model_config, exp_name)
 assert (global_bs % M == 0) and (global_bs % N == 0), "global batch size is too irrgular"
 
