@@ -21,12 +21,13 @@ sys.path.append(workdir_path)
 sys.path.append(example_path)
 
 class AMP(nn.Module):
-    def __init__(self, model_config, exp_name):
+    def __init__(self, model_config, exp_name, placement=False):
         
         super().__init__()
         self.model_config = model_config
         #self.estimate = estimate
         self.model_type = model_config["type"]
+        self.placement = placement
         assert self.model_type == "gpt2" 
         self.init_param()
         
@@ -58,9 +59,12 @@ class AMP(nn.Module):
         model_type = self.model_type
         config, bs, micro_bs, cluster_info, model_config, oth = args
         amp_config = {"profile_cost" : self.profile_cost}
-        rank_map, partition, amp_pred = predict(config, bs, micro_bs, cluster_info, model_config, amp_config, oth)
-        return rank_map, partition, amp_pred
-        
+        if isinstance(bs, list):
+            return predict_multi(config, bs, micro_bs, cluster_info, model_config, amp_config, oth, self.placement)
+        else:
+            assert isinstance(bs, int)
+            return predict_single(config, bs, micro_bs, cluster_info, model_config, amp_config, oth, self.placement)
+
 # pipeline communication cost, return shape: (L-1, pp-1)
 def get_cost_c(cluster_info, model_config, parallel_config, amp_config, dp_index=0):
     h = model_config["hidden_size"]
@@ -124,7 +128,7 @@ def get_cost_c(cluster_info, model_config, parallel_config, amp_config, dp_index
     return cost_c
 
 # execution cost for one layer, return shape (L,)
-def get_cost_e(cluster_info, model_config, parallel_config, amp_config):    
+def get_cost_e(cluster_info, model_config, parallel_config, amp_config, placement):    
 
     h = model_config["hidden_size"]
     s = model_config["sequence_length"]
@@ -153,24 +157,40 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
     # (2) Directly Use profile cost, which includes model parallelism cost.
     for i in range(int(dp.item())):
         assert _num_layer == len(profile_cost["1"]), "predicted number of layers not equal to actual"
-         
-        mp_avg = 0 # TODO: This stays on only when we use FLOP
-        mp_total = 0
-        #mp_total_volume = 0
+        
+        # TODO: first find on average how many cross node (we dont know which layer in which pp)
+            # Compute the constant along the pipeline: 2*(N-1)/(NB)
+        mp_avg = 0
+        if placement:
+            for j in range(int(pp.item())):
+                slowest = float("inf")
+                for k in range(int(mp.item())):
+                    rank_cur = axis2rank(axis=(j,i,k), mp_deg=mp, dp_deg=dp, pp_deg=pp)
+                    node_cur = rank_node_map[int(rank_cur.item())]
+                    
+                    rank_next = axis2rank(axis=(j,i,(k+1)%(mp.item())), mp_deg=mp, dp_deg=dp, pp_deg=pp)
+                    node_next = rank_node_map[int(rank_next.item())]
+
+                    if node_cur == node_next:
+                        connectivity = cluster_info[node_cur][1]
+                    else:
+                        connectivity = min(cluster_info[node_cur][0], cluster_info[node_next][0])
+                slowest = min(slowest, connectivity)
+                mp_avg += 2 * (mp-1) / (mp * slowest)
+
         for layer_id in range(_num_layer):
             layer_type = _layer[layer_id]
-            cur_layer = bs * profile_cost[str(int(mp.item()))][layer_id]
-                
+            if placement:
+                cur_layer = bs * profile_cost["1"][layer_id] / mp.item()
+            else:
+                cur_layer = bs * profile_cost[str(int(mp.item()))][layer_id]
+
             if layer_type == "embed2h":
                 pass
             elif layer_type == "embed2v":
                 cur_layer += (v * h / mp * mp_avg).item()
-                mp_total += (v * h / mp * mp_avg).item()
-                #mp_total_volume += (v * h / mp).item()
             elif layer_type == "transformer_layer":
                 cur_layer += ((7*h**2/mp + 2*bs*s*h) * mp_avg).item()
-                mp_total += ((7*h**2/mp + 2*bs*s*h) * mp_avg).item()
-                #mp_total_volume += ((7*h**2/mp + 2*orig_bs*s*h)).item()
             elif layer_type == "noop":
                 pass
             else:
@@ -257,7 +277,19 @@ def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, part
                 
     return ds_partition, max_dp
 
-def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
+def predict_multi(config, bs, mbs, cluster_info, model_config, amp_config, oth, placement):
+    costs = torch.zeros(len(config))
+    rank_maps = []
+    partitions = []
+    for i in range(len(config)):
+        rank_map, partition, cost = predict_single(config[i], bs[i], mbs[i], cluster_info, model_config, amp_config, oth[i], placement)
+        costs[i] = cost
+        rank_maps.append(rank_map)
+        partitions.append(partition)
+
+    return rank_maps, partitions, costs
+
+def predict_single(config, bs, mbs, cluster_info, model_config, amp_config, oth, placement):
     L = model_config["num_layers"]
     cost = torch.zeros(1,)
     M, N = config.shape
@@ -282,7 +314,7 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
                 
         print(f"AMP estimate default to {rank_map}")
     
-    # valid config, inferred from sa 
+    # valid config, inferred from placement(SA)
     else:
         config = torch.from_numpy(config)
         pp = torch.max(config).float()
@@ -317,7 +349,7 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
     parallel_config = {"mp" : m, "dp" : n, "pp" : pp, "micro_bs" : mbs, "rank_map" : rank_map, "rank_node_map": rank_node_map}
         
     cost_e = get_cost_e(cluster_info=cluster_info, 
-                        model_config=model_config, parallel_config=parallel_config, amp_config=amp_config)
+                        model_config=model_config, parallel_config=parallel_config, amp_config=amp_config, placement=placement)
     cost_c = get_cost_c(cluster_info=cluster_info, 
                         model_config=model_config, parallel_config=parallel_config, amp_config=amp_config)
            
