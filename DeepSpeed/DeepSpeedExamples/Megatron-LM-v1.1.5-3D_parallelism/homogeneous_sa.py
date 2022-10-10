@@ -15,8 +15,8 @@ from torch import optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 
-from cost import get_cost_c, get_cost_e,  AMP
-from pipe import pipe_dp, pipe_ds
+from sa import * 
+from cost_homo import AMP
 from amp_utils import simulate, to_float_torch
 
 # cluster information
@@ -30,10 +30,14 @@ dir_path = os.path.join(home_path, 'amp_main_logs')
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 
+#TODO: Find DGX-2 box config
+cluster_info = {}
+
 # inter-node bandwidth, intra-node bandwidth
 for i in range(N):
     cluster_info[i] = [torch.tensor([50 * 1e9 / 32]).float(), torch.tensor([50 * 1e9 / 32]).float()]
 
+# Model information: 16 layers network, 3 micro-batches
 model_config = {"hidden_size": torch.tensor([1024]).float(), 
                 "sequence_length": torch.tensor([1024]).float(), 
                 "num_layers": torch.tensor([24]).float(), 
@@ -49,51 +53,72 @@ record_file = f"{os.path.join(dir_path, exp_name)}_{time_stamp}.txt"
 # save this name to env
 os.environ["amp_log_path"] = record_file
 
-num_iter = 100
-init_t = 10
-global_bs = 32
+simulated_settings = [] 
+feasible = {}
+              
+known = None
+iter_count = 0
 
+num_iter = 50
+init_t = 10
+
+global_bs = 32
 assert (global_bs % M == 0) and (global_bs % N == 0), "global batch size is too irrgular"
 
-model = AMP(model_config, exp_name)
+model = AMP(model_config, exp_name, placement=True)
 with open(record_file, "a") as fp:
     fp.write(f"{model_config}\n")                
-    fp.write(f"gbs:{global_bs}\n")
+    fp.write(f"gbs:{global_bs}\n")  
 
-# Generate a single initialization point
-h_w, micro_bs, config, known = generate_initial(M, N, global_bs, threads=1)
-h,w = h_w
+num_threads = 2
 
-oth = {"mp_deg": torch.ones(1,)*h, "dp_deg": torch.ones(1,)*w, "pp_deg": torch.ones(1,)*(M*N/(h*w))}
-sa_args = (config, global_bs, micro_bs, cluster_info, model_config, oth)
+budget = 10
+
+h_w, micro_bs_list, configs, known = generate_initial(M, N, global_bs, threads=num_threads)
+
+oth_list = [{"mp_deg": torch.ones(1,)*h, "dp_deg": torch.ones(1,)*w, "pp_deg": torch.ones(1,)*(M*N/(h*w))} for (h,w) in h_w]
+args = (configs, [global_bs] * num_threads, micro_bs_list, cluster_info, model_config, oth_list)
+
+cost_list = [ [] for i in range(num_threads)]
 
 with torch.no_grad():
-    rank_map, partition, cost = model(args)
+    rank_maps, partitions, costs = model(args)
 
-with open(record_file, "a") as fp:
-    fp.write(f"sa init with: {rank_map}, {partition}, {micro_bs}, {h_w} \n")
+for kk in range(num_threads):
+    with open(record_file, "a") as fp:
+        fp.write(f"sa init (thread {kk}) exploring: {rank_maps[kk]}, {partitions[kk]}, {micro_bs_list[kk]}, {h_w[kk]} \n")
 
-want_simulate = [(candidate(h, w, micro_bs, config, partition, rank_map), cost)]
+for j in range(num_threads):
+    cost_list[j].append(costs[j])
 
-# SA algorithm with num_iter iterations
+stop_index = []
+
+# Track how efficient our sa is, given cost model is good
+cost_list = [ [] for i in range(num_threads)]
+want_simulate = [(candidate(h_w[i][0], h_w[i][1], micro_bs_list[i], configs[i], partitions[i], rank_maps[i]), costs[i]) for i in range(len(configs))]
+
 for i in tqdm(range(num_iter)):
     iter_s = time.time()
     cur_t = cool_down(i, num_iter, init_t)   
     
-    h, w = h_w[j]
-    mbs = micro_bs_list[j]
+    for j in range(num_threads):
+        if j in stop_index:
+            continue
+            
+        h, w = h_w[j]
+        mbs = micro_bs_list[j]
 
-    step = neighbor((h, w, mbs), global_bs, known, M, N)
-    if step is None:
-        stop_index.append(j)
-        with open(record_file, "a") as fp:
-            fp.write(f"{j} has stopped with {configs[j]}\n")
-        continue
-    else:
+        step = neighbor((h, w, mbs), global_bs, known, M, N)
+        if step is None:
+            stop_index.append(j)
+            with open(record_file, "a") as fp:
+                fp.write(f"{j} has stopped with {configs[j]}\n")
+            continue
+        else:
             new_h, new_w, new_mbs, new_config = step
             
-            new_oth = {"orig_mp": torch.ones(1,)*new_h, "orig_dp": torch.ones(1,)*new_w,
-                       "orig_pp": torch.ones(1,)*(M*N/(new_h*new_w))}
+            new_oth = {"mp_deg": torch.ones(1,)*new_h, "dp_deg": torch.ones(1,)*new_w,
+                       "pp_deg": torch.ones(1,)*(M*N/(new_h*new_w))}
             
             # Check whether this has been simulated
             new_args = (new_config, global_bs, new_mbs, cluster_info, model_config, new_oth)
@@ -111,8 +136,15 @@ for i in tqdm(range(num_iter)):
                     fp.write(f"(thread {j}) predicts: {new_rank_map}, {new_partition}, {new_mbs}, {new_oth} with p_cost: {new_cost}\n")
                     fp.write(f"{costs}, {new_cost}, {acc_prob}, {accept} \n")
                     
+            #with open(record_file, "a") as fp:
+            #    fp.write(f"{costs}, {new_cost}, {acc_prob}, {accept} \n")
+            
+            # want to simulate but no budget, possibly simulate at last
+            # want_simulate.append((new_candidate, new_cost))
+            
             # If we accept, update current
             if accept:
+                cost_list[j].append(new_cost)
                 with open(record_file, "a") as fp:
                     #fp.write(f"(thread {j}) accepts: {new_rank_map}, {new_partition}, {new_mbs}, {new_oth} with p_cost: {new_cost}\n")
                     fp.write("\n")

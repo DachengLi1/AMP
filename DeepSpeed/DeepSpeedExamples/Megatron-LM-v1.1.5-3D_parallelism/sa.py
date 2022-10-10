@@ -129,7 +129,7 @@ def backtrack(puzzleLength, puzzleWidth, patternLength, patternWidth, domino):
 def cool_down(iter, max_iter, init_temp):
     return init_temp * (1 - iter / max_iter)
 
-def generate_initial(M, N, gbs, threads, domino=False):
+def generate_initial(M, N, gbs, threads, domino=True):
     h_w_list = []
     micro_bs_list = [1] * threads
    
