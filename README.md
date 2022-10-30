@@ -11,7 +11,7 @@ This repository contains the official code for our NeurIPS 2022 paper **AMP**. A
 ## Performance 
 AMP finds strategies that have similar performance to the state-of-the-art strategy finder[[1]](#1) when no heterogeneity in the model and in the cluster. AMP fins strategies that are **1.54x** better than the SOTA when heterogeneity exists in the cluster, and **1.77x** better when heterogeneity exists in the model. In particular, our cost model can accurately predict low costs for top strategies. 
 
-<img src="figures/speedup.PNG" width="400"> <img src="figures/cost_vs_real.png" width="550" >
+<img src="figures/speedup.PNG" width="400"> <img src="figures/cost_vs_real.png" width="400" >
 
 ## Usage
 We provide two settings: (1) use AMP to predict top strategies, (2) Additionally launch real trials with DeepSpeed to validate the ground truth runtime. Setting 1 requires a single CPU, while Setting 2 requires 16 GPUs in AWS EC2 (we provide the instance details in the paper). We have installed the environment and prepare necessary intermediate results for Setting 2 in an [AMI](ami-09f6a8b4410998129) for ease of setup.
