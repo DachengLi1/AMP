@@ -31,16 +31,20 @@ Use our AWS AMI:
 
 | AMI Name       | AMI ID                | Region    | Instances in the paper               |
 |----------------|-----------------------|-----------|--------------------------------------|
-| 	AMP          | ami-09f6a8b4410998129 | us-west-2 | G4dn.12xlarge, P3.8xlarge            |
+| 	AMP-Oct-31   | ami-011d5dd7f6fe79d32 | us-west-2 | G4dn.12xlarge, P3.8xlarge            |
 
-Launch instances specified in the paper, e.g. 4 G4dn.12xlarge instances for the homogeneous experiment. Lauch them within the **same** placement group using the **cluster** strategy in EC2 so that they have the maximum bandwidth. Then add the IPs of each machine in ``~/hostfile`` and state the number of GPUs in each machine ([DeepSpeed Tutorial](https://www.deepspeed.ai/getting-started/)). For instance, all 4x4 clusters in the paper are specified by: 
+Launch instances specified in the paper, e.g. 4 G4dn.12xlarge instances for the homogeneous experiment. Lauch them within the **same** placement group using the **cluster** strategy in EC2 so that they have the maximum bandwidth. Assume that AWS assigns 4 machines with IP address IP1, IP2, IP3, and IP4. Then do several steps on the master Machine IP1:
+- ssh into IP[1-4] and exit to store the public ssh key of all machines in IP1, so the ssh verification does not prompt during trials.
+- Add IP[1-4] to ``~/hostfile`` and state the number of GPUs in each machine ([DeepSpeed Tutorial](https://www.deepspeed.ai/getting-started/)). For instance, all 4x4 clusters in the paper are specified by: 
 ````
 IP1 slots=4
 IP2 slots=4
 IP3 slots=4
 IP4 slots=4
 ````
-Suggestions: (1) Warm up each AWS machine before running, otherwise trials may get terminated by timeout. A simple warmup is ``python; import torch; a = torch.randn(100,100).cuda()`` (2) If some configurations hang, one can manually login to each machine and kill GPU processes. The optimization algorithms runs on CPU and will not be affected. A useful command to check processes on GPU: ````sudo fuser -v /dev/nvidia*````. (3) If processes constantly get stuck, try removing all caches by ``rm -rf ~/amp_simulate; rm -rf ~/tmp``. If there are other blockers in launching distributed experiments, please leave an issue here or send the author an [email](dacheng2@andrew.cmu.edu).
+- Activate our environment by ``source anaconda3/bin/activate; conda activate amp``.
+
+Suggestions: (1) Warm up **each** AWS machine before running, otherwise trials may get terminated by timeout. A simple warmup is ``python; import torch; a = torch.randn(100,100).cuda()`` (2) If some trials hang, one can manually login to each machine and kill GPU processes. The optimization algorithms runs on CPU and will not be affected. A useful command to check processes on GPU: ````sudo fuser -v /dev/nvidia*````. (3) If processes constantly get stuck, try removing all caches by ``rm -rf ~/amp_simulate; rm -rf ~/tmp``. If there are other blockers in launching distributed experiments, please leave an issue here or send the author an [email](dacheng2@andrew.cmu.edu).
 
 ### Experiment 1: Homogeneous
 With Setting 1:
@@ -55,7 +59,7 @@ With Setting 2:
 cd ~/AMP/DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism
 python homogeneous.py --full --budget 10
 ````
-This will run the prediction and launch top 10 predicted strategies. It will finish in around 1500 seconds and store the result in ~/amp_main_logs/homogeneous_[time_stamp].txt. To run x numbers of real trials, use argument --budget x. The raw log from our modified DeepSpeed contains a lot of details such as the pipeline schedule, we recommend piping it into another log.txt for further interpretation.
+This will run the prediction and launch top 10 predicted strategies. It will finish in around 1500 seconds and store the result in ~/amp_main_logs/homogeneous_[time_stamp].txt. To run x numbers of real trials, use argument ````--budget x````. The raw log from our modified DeepSpeed contains a lot of details such as the pipeline schedule, we recommend redirecting it into another log.txt for further interpretation.
 
 Cached results with 53 real trials are in AMP/src/results/homogeneous_results.txt and logs in AMP/src/results/homogeneous_log.txt.
 
@@ -69,7 +73,7 @@ This will finish in around 500 seconds and store the result in ~/amp_main_logs/h
 
 With Setting 2:
 ```` 
-cd AMP/DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism
+cd ~/AMP/DeepSpeed/DeepSpeedExamples/Megatron-LM-v1.1.5-3D_parallelism
 python het_cluster.py --full --budget 10
 ````
 Predicting and 10 real trials takes around 1600 seconds. Cached results with 53 real trials are in AMP/src/results/het_cluster_results.txt and logs in AMP/src/results/het_cluster_log.txt.
@@ -91,10 +95,10 @@ Predicting and 10 real trials takes around 1300 seconds. Cached results with 65 
 
 ## Code Logic
 Basic logic of AMP is implemented in several files:
-- The main function (homogeneous.py, het_cluster.py, het_model.py) iteratively applies the cost model and selects the best ones to launch real trials.
-- cost_xxx.py implements the cost model. (We are in the process to reproduce the SA ablation study, please ignore the mp_avg variable.)
+- The main function (homogeneous.py, het_cluster.py, het_model.py) iteratively applies the cost model and optimize. 
+- cost_xxx.py implements the cost model.
 - pipe.py implements the dynamic programming algorithm.
-- sa.py gives possible candidates for the main function to loop. 
+- sa.py provides possible candidates for the main function. 
 - amp_utils.py implements other functions such as launching real trials with given configurations.
 
 ## Citation
