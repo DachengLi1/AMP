@@ -42,6 +42,7 @@ class AMP(nn.Module):
         json_path = os.path.join(example_path, "ds_config.json")
 
         self.profile_cost = {}
+        #if self.estimate:
         for mp_size in [1,2,4]:
             # known_cost directory stores the real forward time with correponding model parallel degree.
             known_record = f"known_cost/{self.model_type}_P3_{mp_size}"
@@ -52,7 +53,7 @@ class AMP(nn.Module):
             # average between different speed of GPUs
             cur_profile_cost = cur_profile_cost1 * 0.75 + cur_profile_cost2 * 0.25
             self.profile_cost[str(mp_size)] = cur_profile_cost
-            print(f"using profile cost with mp_size {mp_size}: {cur_profile_cost}")
+            #print(f"using profile cost with mp_size {mp_size}: {cur_profile_cost}")
 
         
     def forward(self, args):
@@ -147,14 +148,12 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
             
     cost_e = np.zeros((int(dp.item()), _num_layer))
 
-    # Avegrage across pipelines
-    # We have two choices here:
-    # (1) Estimate execution cost and model parallelism cost ourselves;
-    # (2) Directly Use profile cost, which includes model parallelism cost.
     for i in range(int(dp.item())):
         assert _num_layer == len(profile_cost["1"]), "predicted number of layers not equal to actual"
-         
-        mp_avg = 0 # TODO: clean SA code to update mp_avg
+        
+        # mp_avg is only used with placement ablation study. Ignore it in reproducing main results.
+        # cost_e in the main result is equivalent to using profile_cost.
+        mp_avg = 0 
         for layer_id in range(_num_layer):
             layer_type = _layer[layer_id]
             cur_layer = bs * profile_cost[str(int(mp.item()))][layer_id]
@@ -196,10 +195,10 @@ def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, part
         
     # First translate to deepspeed partition form
     ds_partition = [0]
-    print(f"partition: {partition}")
+    #print(f"partition: {partition}")
     for i in range(len(partition)):
         ds_partition.append(ds_partition[-1]+partition[i])
-    print(ds_partition, _num_layer)
+    #print(ds_partition, _num_layer)
     assert ds_partition[-1] == _num_layer
     assert len(ds_partition) == pp + 1
                 
@@ -242,6 +241,7 @@ def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, part
                 else:
                     raise RuntimeError("Unknown layer type.")
                         
+            #print(f"dp: {dp_const} and param {param_count}")
             cur_dp = dp_const * param_count
             if cur_dp > max_dp:
                 max_dp = cur_dp
@@ -271,7 +271,7 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
                 rank_node_map[counter] = j
                 counter += 1
                 
-        print(f"AMP estimate default to {rank_map}")
+        #print(f"AMP estimate default to {rank_map}")
     
     # valid config, inferred from sa 
     else:
@@ -312,6 +312,7 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
     cost_c = get_cost_c(cluster_info=cluster_info, 
                         model_config=model_config, parallel_config=parallel_config, amp_config=amp_config)
            
+    #partition, _ = pipe_dp(int(L.item()), np.asarray(cost_e.detach()), np.asarray(cost_c.detach()), int(pp.item()), int(B.item()))
     if int(B.item()) == 1:
         partition, _ = pipe_uniform(int(L.item()), int(pp.item()))
         partition[0] += 2
@@ -328,5 +329,5 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
                         amp_config=amp_config, partition=partition)
        
     cost += dp_side_cost
-    print(ds_partition, cost, dp_side_cost)
+    #print(ds_partition, cost, dp_side_cost)
     return rank_map, ds_partition, cost

@@ -141,21 +141,22 @@ def _initialize_distributed():
             # AWS version: hack this
             assert args.local_rank is not None
             device = args.local_rank
+            print(f"local rank: {args.local_rank}")
             #device = args.rank % device_count
             #if args.local_rank is not None:
             #    assert args.local_rank == device, \
             #        'expected local-rank to be the same as rank % device-count.'
             #else:
             #    args.local_rank = device
-            print("hi hi debug before: {args.rank} {torch.cuda.current_device()}")
+            print(f"hi hi debug before: {args.rank} {torch.cuda.current_device()}")
             torch.cuda.set_device(device)
-            print("hi hi debug after: {args.rank} {torch.cuda.current_device()}")
+            print(f"hi hi debug after: {args.rank} {torch.cuda.current_device()}")
         # Call the init process
         init_method = 'tcp://'
         master_ip = os.getenv('MASTER_ADDR', 'localhost')
         master_port = os.getenv('MASTER_PORT', '6001')
         init_method += master_ip + ':' + master_port
-        print(f"init with {args.rank}/{args.world_size} {init_method} {device}")
+        print(f"init with {args.rank}/{args.world_size} {init_method} {torch.cuda.current_device()}")
         torch.distributed.init_process_group(
             backend=args.distributed_backend,
             world_size=args.world_size, rank=args.rank,

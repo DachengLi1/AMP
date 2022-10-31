@@ -43,16 +43,13 @@ class AMP(nn.Module):
         json_path = os.path.join(example_path, "ds_config.json")
 
         self.profile_cost = {}
-        #if self.estimate:
         for mp_size in [1,2,4]:
             # known_cost directory stores the real forward time with correponding model parallel degree.
             known_record = f"known_cost/{self.model_type}_G4_{mp_size}"
             # We model backward time as forward time * 2
             cur_profile_cost = 3 * np.load(f"{known_record}.npy")
             self.profile_cost[str(mp_size)] = cur_profile_cost
-            print(f"using exec cost with mp_size {mp_size}: {cur_profile_cost}")
-        #else:
-        #    self.profile_cost = None
+            #print(f"using exec cost with mp_size {mp_size}: {cur_profile_cost}")
 
         
     def forward(self, args):
@@ -151,15 +148,11 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config, placemen
             
     cost_e = np.zeros((int(dp.item()), _num_layer))
 
-    # Avegrage across pipelines
-    # We have two choices here:
-    # (1) Estimate execution cost and model parallelism cost ourselves;
-    # (2) Directly Use profile cost, which includes model parallelism cost.
     for i in range(int(dp.item())):
         assert _num_layer == len(profile_cost["1"]), "predicted number of layers not equal to actual"
         
-        # TODO: first find on average how many cross node (we dont know which layer in which pp)
-            # Compute the constant along the pipeline: 2*(N-1)/(NB)
+        # mp_avg is only used with placement ablation study. Ignore it in reproducing main results.
+        # cost_e in the main result is equivalent to using profile_cost. 
         mp_avg = 0
         if placement:
             for j in range(int(pp.item())):
@@ -199,7 +192,6 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config, placemen
     
     cost_e = torch.from_numpy(np.stack(cost_e, axis=0))            
     cost_e = torch.mean(cost_e, dim=0)
-    #print(f"using cost_e: {cost_e} with sum {torch.sum(cost_e)}" )
     return cost_e
 
 def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, partition):
@@ -223,10 +215,10 @@ def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, part
         
     # First translate to deepspeed partition form
     ds_partition = [0]
-    print(f"partition: {partition}")
+    #print(f"partition: {partition}")
     for i in range(len(partition)):
         ds_partition.append(ds_partition[-1]+partition[i])
-    print(ds_partition, _num_layer)
+    #print(ds_partition, _num_layer)
     assert ds_partition[-1] == _num_layer
     assert len(ds_partition) == pp + 1
                 
@@ -312,7 +304,7 @@ def predict_single(config, bs, mbs, cluster_info, model_config, amp_config, oth,
                 rank_node_map[counter] = j
                 counter += 1
                 
-        print(f"AMP estimate default to {rank_map}")
+        #print(f"AMP estimate default to {rank_map}")
     
     # valid config, inferred from placement(SA)
     else:
@@ -353,7 +345,6 @@ def predict_single(config, bs, mbs, cluster_info, model_config, amp_config, oth,
     cost_c = get_cost_c(cluster_info=cluster_info, 
                         model_config=model_config, parallel_config=parallel_config, amp_config=amp_config)
            
-    #partition, _ = pipe_dp(int(L.item()), np.asarray(cost_e.detach()), np.asarray(cost_c.detach()), int(pp.item()), int(B.item()))
     if int(B.item()) == 1:
         partition, _ = pipe_uniform(int(L.item()), int(pp.item()))
         partition[0] += 2
@@ -370,5 +361,5 @@ def predict_single(config, bs, mbs, cluster_info, model_config, amp_config, oth,
                         amp_config=amp_config, partition=partition)
        
     cost += dp_side_cost
-    print(ds_partition, cost, dp_side_cost)
+    #print(ds_partition, cost, dp_side_cost)
     return rank_map, ds_partition, cost

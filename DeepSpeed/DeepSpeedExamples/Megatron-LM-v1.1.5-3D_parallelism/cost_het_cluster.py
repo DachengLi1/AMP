@@ -26,7 +26,6 @@ class AMP(nn.Module):
         super().__init__()
         self.model_config = model_config
         self.exp_name = "init_" + exp_name 
-        #self.estimate = estimate
         self.model_type = model_config["type"]
         assert self.model_type == "gpt2" 
         self.init_param()
@@ -54,9 +53,7 @@ class AMP(nn.Module):
             # average between different speed of GPUs
             cur_profile_cost = cur_profile_cost1 * 0.75 + cur_profile_cost2 * 0.25
             self.profile_cost[str(mp_size)] = cur_profile_cost
-            print(f"using profile cost with mp_size {mp_size}: {cur_profile_cost}")
-        #else:
-        #    self.profile_cost = None
+            #print(f"using profile cost with mp_size {mp_size}: {cur_profile_cost}")
 
         
     def forward(self, args):
@@ -125,7 +122,6 @@ def get_cost_c(cluster_info, model_config, parallel_config, amp_config, dp_index
                 cost_c[i][k][j] = layer_volume[k]  / slowest_bandwidth
             
     cost_c = torch.mean(cost_c, dim=0)
-    #print(f"using cost_c: {cost_c}")
     return cost_c
 
 # execution cost for one layer, return shape (L,)
@@ -152,16 +148,12 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
             
     cost_e = np.zeros((int(dp.item()), _num_layer))
 
-    # Avegrage across pipelines
-    # We have two choices here:
-    # (1) Estimate execution cost and model parallelism cost ourselves;
-    # (2) Directly Use profile cost, which includes model parallelism cost.
     for i in range(int(dp.item())):
         assert _num_layer == len(profile_cost["1"]), "predicted number of layers not equal to actual"
-         
-        mp_avg = 0 # TODO: This stays on only when we use FLOP
-        mp_total = 0
-        #mp_total_volume = 0
+        
+        # mp_avg is only used with placement ablation study. Ignore it in reproducing main results.
+        # cost_e in the main result is equivalent to using profile_cost.
+        mp_avg = 0 
         for layer_id in range(_num_layer):
             layer_type = _layer[layer_id]
             cur_layer = bs * profile_cost[str(int(mp.item()))][layer_id]
@@ -170,12 +162,8 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
                 pass
             elif layer_type == "embed2v":
                 cur_layer += (v * h / mp * mp_avg).item()
-                mp_total += (v * h / mp * mp_avg).item()
-                #mp_total_volume += (v * h / mp).item()
             elif layer_type == "transformer_layer":
                 cur_layer += ((7*h**2/mp + 2*bs*s*h) * mp_avg).item()
-                mp_total += ((7*h**2/mp + 2*bs*s*h) * mp_avg).item()
-                #mp_total_volume += ((7*h**2/mp + 2*orig_bs*s*h)).item()
             elif layer_type == "noop":
                 pass
             else:
@@ -184,7 +172,6 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
     
     cost_e = torch.from_numpy(np.stack(cost_e, axis=0))            
     cost_e = torch.mean(cost_e, dim=0)
-    #print(f"using cost_e: {cost_e} with sum {torch.sum(cost_e)}" )
     return cost_e
 
 def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, partition):
@@ -208,10 +195,10 @@ def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, part
         
     # First translate to deepspeed partition form
     ds_partition = [0]
-    print(f"partition: {partition}")
+    #print(f"partition: {partition}")
     for i in range(len(partition)):
         ds_partition.append(ds_partition[-1]+partition[i])
-    print(ds_partition, _num_layer)
+    #print(ds_partition, _num_layer)
     assert ds_partition[-1] == _num_layer
     assert len(ds_partition) == pp + 1
                 
@@ -247,7 +234,6 @@ def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, part
                     if not counted:
                         counted = True
                         param_count += h * v / mp
-                    #print(f"embed size {h * v / mp}")
                 elif layer_type == "transformer_layer":
                     param_count += 12 * h ** 2 / mp
                 elif layer_type == "noop":
@@ -285,7 +271,7 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
                 rank_node_map[counter] = j
                 counter += 1
                 
-        print(f"AMP estimate default to {rank_map}")
+        #print(f"AMP estimate default to {rank_map}")
     
     # valid config, inferred from sa 
     else:
@@ -343,5 +329,5 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
                         amp_config=amp_config, partition=partition)
        
     cost += dp_side_cost
-    print(ds_partition, cost, dp_side_cost)
+    #print(ds_partition, cost, dp_side_cost)
     return rank_map, ds_partition, cost

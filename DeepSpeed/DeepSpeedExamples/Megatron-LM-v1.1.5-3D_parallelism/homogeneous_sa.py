@@ -136,17 +136,11 @@ for i in tqdm(range(num_iter)):
                     fp.write(f"(thread {j}) predicts: {new_rank_map}, {new_partition}, {new_mbs}, {new_oth} with p_cost: {new_cost}\n")
                     fp.write(f"{costs}, {new_cost}, {acc_prob}, {accept} \n")
                     
-            #with open(record_file, "a") as fp:
-            #    fp.write(f"{costs}, {new_cost}, {acc_prob}, {accept} \n")
-            
-            # want to simulate but no budget, possibly simulate at last
-            # want_simulate.append((new_candidate, new_cost))
-            
             # If we accept, update current
             if accept:
                 cost_list[j].append(new_cost)
                 with open(record_file, "a") as fp:
-                    #fp.write(f"(thread {j}) accepts: {new_rank_map}, {new_partition}, {new_mbs}, {new_oth} with p_cost: {new_cost}\n")
+                    fp.write(f"(thread {j}) accepts: {new_rank_map}, {new_partition}, {new_mbs}, {new_oth} with p_cost: {new_cost}\n")
                     fp.write("\n")
                 configs[j] = new_config
                 costs[j] = new_cost
@@ -174,23 +168,20 @@ for i in tqdm(range(num_iter)):
 # sorted simulated settings
 with open(record_file, "a") as fp:
     fp.write(f"All threads finished.\n")
-    fp.write(f" ---------- printing sorted---------------- {len(want_simulate)}")
-#    for item in sorted_settings:
-#        fp.write(f"{item}")
 
 want_simulate = sorted(want_simulate, key = lambda kv: kv[1])
 with open(record_file, "a") as fp:
     fp.write(f"{want_simulate}")
 
-for i in range(budget):
+for i in range(len(want_simulate)):
     can = want_simulate[i][0]
     rmap = can.rank_map
     partition = can.partition
     mbs = can.mbs
     h = can.h
     w = can.w  
-    oth = [{"orig_mp": torch.ones(1,)*h, "orig_dp": torch.ones(1,)*w,
-                               "orig_pp": torch.ones(1,)*(M*N/(h*w))}]
+    oth = [{"mp_deg": torch.ones(1,)*h, "dp_deg": torch.ones(1,)*w,
+                               "pp_deg": torch.ones(1,)*(M*N/(h*w))}]
     gt_cost = simulate([rmap], [partition], torch.ones(1,)*global_bs, to_float_torch([mbs]), model_config, oth, exp_name)
     #gt_cost = [np.random.randn()]
     gt_cost = gt_cost[0]

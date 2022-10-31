@@ -100,12 +100,11 @@ while True:
             rank_map, partition, cost = model(model_args)
         
         want_simulate.append(((mbs, oth, rank_map, partition), cost))
-    #if len(want_simulate) > 5:
-    #    break
     iter_count += 1
-
+    if iter_count % 10 == 0:
+        print(f"AMP finish {iter_count} iterations")
 time_e = time.time()
-print(f"finish amp search without placement in {iter_count} iterations in {time_e - time_s}")
+print(f"AMP finishes without placement in {iter_count} iterations in {time_e - time_s}")
 
 sorted_settings = sorted(want_simulate, key = lambda kv: kv[1])
 with open(record_file, "a") as fp:

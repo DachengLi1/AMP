@@ -56,7 +56,7 @@ def pipe_ast(L, cost_e, cost_c, k, B):
     # add each stage cost at the end 
     S, cost = trace[L-1][k-1][0]
     cost += np.sum(cost_e)
-    print(f"pipe_ast used {time_dp_used} with L={L}, k={k}")
+    print(f"pipe_ast used {round(time_dp_used,2)} seconds with {L} layers and {k} stages.")
     return (S, cost)
 
 def pipe_ds(L, cost_e, cost_c, k, B):
@@ -93,7 +93,7 @@ def pipe_gpt2(L, pp):
     return ret, None
 
 def pipe_uniform(L, pp):
-    print("using pipe uniform")
+    #print("using a uniform")
     each = L // pp
     remain = L - pp * each
     ret = [each]
@@ -101,8 +101,8 @@ def pipe_uniform(L, pp):
         ret.append(each)
     for i in range(remain):
         ret[i] += 1
-    print(f"pipe uniform returns {ret}")
-    #print(f"-----------{ret}. {L}, {pp}")
+    # print(f"pipe uniform returns {ret}")
+    # print(f"-----------{ret}. {L}, {pp}")
     return ret, None
 
 def pipe_transgan(cost_e, pp):

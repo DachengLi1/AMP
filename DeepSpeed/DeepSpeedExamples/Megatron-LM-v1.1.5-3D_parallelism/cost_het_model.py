@@ -44,7 +44,7 @@ class AMP(nn.Module):
             # We model backward time as forward time * 2
             cur_profile_cost = 3 * np.load(f"{known_record}.npy")
             self.profile_cost[str(mp_size)] = cur_profile_cost
-            print(f"using exec cost with mp_size {mp_size}: {cur_profile_cost}")
+            #print(f"using exec cost with mp_size {mp_size}: {cur_profile_cost}")
         
     def forward(self, args):
         model_type = self.model_type
@@ -118,19 +118,16 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
     for i in range(int(dp.item())):
         cost_e[i] = []
 
-    # Avegrage across pipelines
-    # (1) Estimate model parallelism cost ourselves (for more flexible device placement);
-    # (2) Directly Use profile cost, which includes model parallelism cost.
     for i in range(int(dp.item())):
-        # TODO: first find on average how many cross node (we dont know which layer in which pp)
-        # Compute the constant along the pipeline: 2*(N-1)/(NB)
+            # mp_avg is only used with placement ablation study. Ignore it in reproducing main results.
+            # cost_e in the main result is equivalent to using profile_cost.
+
             mp_avg = torch.zeros(1,)
             for j in range(int(pp.item())):
                 slowest = float("inf")
                 for k in range(int(mp.item())):
                     rank_cur = axis2rank(axis=(j,i,k), mp_deg=mp, dp_deg=dp, pp_deg=pp)
                     node_cur = rank_node_map[int(rank_cur.item())]
-                #    print(rank_cur, node_cur)
 
                     rank_next = axis2rank(axis=(j,i,(k+1)%(mp.item())), mp_deg=mp, dp_deg=dp, pp_deg=pp)
                     node_next = rank_node_map[int(rank_next.item())]
@@ -147,17 +144,13 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
             bs = orig_bs
             cost_e[i].append(orig_bs * profile_cost[str(int(mp.item()))][0])
 
-            mp_total = 0
             s = bottom**2
             first_layer_id = 3
 
             for inc in range(depth[0]):
                 cur_layer_id = first_layer_id + inc
                 cur_layer = orig_bs * (profile_cost[str(int(mp.item()))][cur_layer_id])
-                #print(cur_layer)
                 cur_layer += ((7*h**2/mp + 2*s*bs*h) * mp_avg).item()
-                mp_total += ((7*h**2/mp + 2*s*bs*h) * mp_avg).item()
-                #print(((7*h**2/mp + 2*s*bs*h) * mp_avg).item())
                 cost_e[i].append(cur_layer)
 
             s = 4*bottom**2
@@ -166,7 +159,6 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
                 cur_layer_id = first_layer_id + inc
                 cur_layer = orig_bs * (profile_cost[str(int(mp.item()))][cur_layer_id])
                 cur_layer +=  ((7*h**2/mp + 2*s*bs*h) * mp_avg).item()
-                mp_total += ((7*h**2/mp + 2*s*bs*h) * mp_avg).item()
                 cost_e[i].append(cur_layer)
 
             s = 16*bottom**2
@@ -175,7 +167,6 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
                 cur_layer_id = first_layer_id + inc
                 cur_layer = orig_bs * (profile_cost[str(int(mp.item()))][cur_layer_id])
                 cur_layer += ((7*h**2/mp + 2*s*bs*h) * mp_avg).item()
-                mp_total += ((7*h**2/mp + 2*s*bs*h) * mp_avg).item()
                 cost_e[i].append(cur_layer)
 
             bs *= 16
@@ -185,7 +176,6 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
                 cur_layer_id = first_layer_id + inc
                 cur_layer =  orig_bs* (profile_cost[str(int(mp.item()))][cur_layer_id])
                 cur_layer += ((7*(h/4)**2/mp + 2*s*bs*(h/4)) * mp_avg).item()
-                mp_total += ((7*(h/4)**2/mp + 2*s*bs*(h/4)) * mp_avg).item()
                 cost_e[i].append(cur_layer)
 
             bs *= 4
@@ -195,7 +185,6 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
                 cur_layer_id = first_layer_id + inc
                 cur_layer =  orig_bs * (profile_cost[str(int(mp.item()))][cur_layer_id])
                 cur_layer += ((7*(h/16)**2/mp + 2*s*bs*(h/16)) * mp_avg).item()
-                mp_total += ((7*(h/16)**2/mp + 2*s*bs*(h/16)) * mp_avg).item()
                 cost_e[i].append(cur_layer)
 
             bs *= 4
@@ -204,15 +193,11 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
             for inc in range(depth[5]):
                 cur_layer_id = first_layer_id + inc
                 cur_layer = orig_bs * (profile_cost[str(int(mp.item()))][cur_layer_id])
-                #print(f"now {cur_layer} {}{cost_single[cur_layer_id] / (mp).item()}")
                 cur_layer += ((7*(h/64)**2/mp + 2*s*bs*(h/64)) * mp_avg).item()
-                mp_total +=  ((7*(h/64)**2/mp + 2*s*bs*(h/64)) * mp_avg).item()
                 cost_e[i].append(cur_layer)
 
-            #print(f"debug: {len(cost_e[i])} {len(cost_single)}")
             assert len(cost_e[i]) == 1 + depth[0] + depth[1] + depth[2] + depth[3] + depth[4] + depth[5]
             cost_e[i] = np.asarray(cost_e[i])
-            #print(f"debug: total execution cost:{np.sum(cost_e[i])} with predicted mp cost:{mp_total}")
 
     cost_e = torch.from_numpy(np.stack(cost_e, axis=0))            
     cost_e = torch.mean(cost_e, dim=0)
@@ -273,7 +258,7 @@ def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, part
 
     ptr = -1
     ds_partition = [0]
-    print(partition, work_layers)
+    #print(partition, work_layers)
     for i in partition:
         ptr += i
         last_layer_id = work_layers[ptr]
@@ -394,5 +379,5 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
                         amp_config=amp_config, partition=partition)
        
     cost += dp_side_cost
-    print(ds_partition, cost, dp_side_cost)
+    #print(ds_partition, cost, dp_side_cost)
     return rank_map, ds_partition, cost

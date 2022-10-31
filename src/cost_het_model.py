@@ -44,7 +44,7 @@ class AMP(nn.Module):
             # We model backward time as forward time * 2
             cur_profile_cost = 3 * np.load(f"{known_record}.npy")
             self.profile_cost[str(mp_size)] = cur_profile_cost
-            print(f"using exec cost with mp_size {mp_size}: {cur_profile_cost}")
+            #print(f"using exec cost with mp_size {mp_size}: {cur_profile_cost}")
         
     def forward(self, args):
         model_type = self.model_type
@@ -118,19 +118,16 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
     for i in range(int(dp.item())):
         cost_e[i] = []
 
-    # Avegrage across pipelines
-    # (1) Estimate model parallelism cost ourselves (for more flexible device placement);
-    # (2) Directly Use profile cost, which includes model parallelism cost.
     for i in range(int(dp.item())):
-        # TODO: To enable SA, we have to estimate tensor model-parallelism cost ourselevs.
-        # But currently, we don't use SA in the final output, so we can simply used the profiled result.
+            # mp_avg is only used with placement ablation study. Ignore it in reproducing main results.
+            # cost_e in the main result is equivalent to using profile_cost.
+
             mp_avg = torch.zeros(1,)
             for j in range(int(pp.item())):
                 slowest = float("inf")
                 for k in range(int(mp.item())):
                     rank_cur = axis2rank(axis=(j,i,k), mp_deg=mp, dp_deg=dp, pp_deg=pp)
                     node_cur = rank_node_map[int(rank_cur.item())]
-                #    print(rank_cur, node_cur)
 
                     rank_next = axis2rank(axis=(j,i,(k+1)%(mp.item())), mp_deg=mp, dp_deg=dp, pp_deg=pp)
                     node_next = rank_node_map[int(rank_next.item())]
@@ -140,6 +137,7 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
                     else:
                         connectivity = min(cluster_info[node_cur][0], cluster_info[node_next][0])
                 slowest = min(slowest, connectivity)
+                #mp_avg += 2 * (mp-1) / (mp * slowest)
 
             mp_avg = 0
 
@@ -203,6 +201,7 @@ def get_cost_e(cluster_info, model_config, parallel_config, amp_config):
 
     cost_e = torch.from_numpy(np.stack(cost_e, axis=0))            
     cost_e = torch.mean(cost_e, dim=0)
+    #print(f"using cost_e: {cost_e} with sum {torch.sum(cost_e)}" )
     return cost_e
 
 def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, partition):
@@ -259,7 +258,7 @@ def dp_cost(config, cluster_info,model_config, parallel_config, amp_config, part
 
     ptr = -1
     ds_partition = [0]
-    print(partition, work_layers)
+    #print(partition, work_layers)
     for i in partition:
         ptr += i
         last_layer_id = work_layers[ptr]
@@ -324,6 +323,8 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
                 rank_node_map[counter] = j
                 counter += 1
                 
+        #print(f"AMP estimate default to {rank_map}")
+    
     # valid config, inferred from sa 
     else:
         config = torch.from_numpy(config)
@@ -363,6 +364,7 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
     cost_c = get_cost_c(cluster_info=cluster_info, 
                         model_config=model_config, parallel_config=parallel_config, amp_config=amp_config)
            
+    #partition, _ = pipe_dp(int(L.item()), np.asarray(cost_e.detach()), np.asarray(cost_c.detach()), int(pp.item()), int(B.item()))
     if int(B.item()) == 1:
         partition, _ = pipe_uniform(int(L.item()), int(pp.item()))
     else:
@@ -377,5 +379,5 @@ def predict(config, bs, mbs, cluster_info, model_config, amp_config, oth):
                         amp_config=amp_config, partition=partition)
        
     cost += dp_side_cost
-    print(ds_partition, cost, dp_side_cost)
+    #print(ds_partition, cost, dp_side_cost)
     return rank_map, ds_partition, cost
