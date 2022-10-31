@@ -14,7 +14,7 @@ AMP finds strategies that have similar performance to the state-of-the-art strat
 <img src="figures/speedup.PNG" width="400"> <img src="figures/cost_vs_real.png" width="400" >
 
 ## Usage
-We provide two settings: (1) use AMP to predict top strategies, (2) Additionally launch real trials with DeepSpeed to validate the ground truth runtime. Setting 1 requires a single CPU, while Setting 2 requires 16 GPUs in AWS EC2 (we provide the instance details in the paper). We have installed the environment and prepare necessary intermediate results for Setting 2 in an [AMI](ami-09f6a8b4410998129) for ease of setup.
+We provide two settings: (1) use AMP to predict top strategies, (2) Additionally launch real trials with DeepSpeed to validate the ground truth runtime. Setting 1 requires a single CPU, while Setting 2 requires 16 GPUs in AWS EC2 (we provide the instance details in the paper). We have installed the environment and prepare necessary intermediate results for Setting 2 in an AMI for ease of setup.
 
 #### Set up environment for setting 1
 ````
