@@ -6,7 +6,7 @@
 
 This repository contains the official code for our NeurIPS 2022 paper **AMP**. AMP is an **automatic** approach to find fast model-parallel strategies to train large Deep Learning models. We design AMP to tackle real-world scnerios where users are training **hetergeneous** models with uneven layers and **hetergeneous** cluster with mixed generations of GPUs. Concretely, it contributes
 - A valid **representation** of model-parallelism strategies.
-- A **cost** model that accurately predicts the running time of a strategy without launching expensive real trials.
+- A **cost model** that accurately predicts the running time of a strategy without launching expensive real trials.
 - An **automatic optimization** procedure that uses the cost model and a dynamic programming algorithm to efficiently find fast strategies.
 
 <img src="figures/workflow.png" width="600">
