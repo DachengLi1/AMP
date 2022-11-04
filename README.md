@@ -4,14 +4,17 @@
 [**Citation**](#citation) |
 [**Presentation**](https://recorder-v3.slideslive.com/?share=74667&s=aa9ce793-0697-43bc-9d8f-f7b139471f95) 
 
-This repository contains the official code for our NeurIPS 2022 paper **AMP**. AMP is an **automatic** approach to find fast model-parallel strategies to train large Deep Learning models. We design AMP to tackle real-world scnerios where users are training **hetergeneous** models with uneven layers and **hetergeneous** cluster with mixed generations of GPUs. Concretely, it contributes (1) a valid representation of model-parallelism strategies, (2) a cost model that accurately predicts the running time of a strategy without launching expensive real trials, and (3) An optimization procedure that uses the cost model and a dynamic programming algorithm to efficiently find fast strategies.
+This repository contains the official code for our NeurIPS 2022 paper **AMP**. AMP is an **automatic** approach to find fast model-parallel strategies to train large Deep Learning models. We design AMP to tackle real-world scnerios where users are training **hetergeneous** models with uneven layers and **hetergeneous** cluster with mixed generations of GPUs. Concretely, it contributes
+- A valid **representation** of model-parallelism strategies.
+- A **cost** model that accurately predicts the running time of a strategy without launching expensive real trials.
+- An **automatic optimization** procedure that uses the cost model and a dynamic programming algorithm to efficiently find fast strategies.
 
-<img src="figures/workflow.png" width="400">
+<img src="figures/workflow.png" width="600">
 
 ## Performance 
 AMP finds strategies that have similar performance to the state-of-the-art strategy finder[[1]](#1) when no heterogeneity in the model and in the cluster. AMP fins strategies that are **1.54x** better than the SOTA when heterogeneity exists in the cluster, and **1.77x** better when heterogeneity exists in the model. In particular, the cost model in AMP can accurately predict low costs for top strategies. 
 
-<img src="figures/speedup.PNG" width="400"> <img src="figures/cost_vs_real.png" width="400" >
+<img src="figures/speedup.PNG" width="600"> <img src="figures/cost_vs_real.png" width="600" >
 
 ## Usage
 We provide two settings: (1) use AMP to predict top strategies, (2) Additionally launch real trials with DeepSpeed to validate the ground truth runtime. Setting 1 requires a single CPU, while Setting 2 requires 16 GPUs in AWS EC2 (we provide the instance details in the paper). We have installed the environment and prepare necessary intermediate results for Setting 2 in an AMI for ease of setup.
